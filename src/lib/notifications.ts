@@ -82,7 +82,7 @@ export async function sendLeadNotification(params: LeadNotificationParams): Prom
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: 'Superfan Audit <notifications@superfanaudit.com>',
+        from: 'Superfan Audit <onboarding@resend.dev>',
         to: [NOTIFICATION_TO],
         subject: `New lead: ${params.artistName}`,
         html,
