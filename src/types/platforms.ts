@@ -2,6 +2,8 @@ export interface SpotifyData {
   found: boolean;
   artistId?: string;
   name?: string;
+  followerCount?: number;
+  popularity?: number;
   genres?: string[];
   images?: { url: string; width: number; height: number }[];
   externalUrl?: string;
@@ -9,6 +11,7 @@ export interface SpotifyData {
   singleCount?: number;
   totalReleases?: number;
   latestRelease?: { name: string; releaseDate: string; type: string };
+  dataSource?: 'api' | 'search';
   error?: string;
 }
 
@@ -26,6 +29,7 @@ export interface YouTubeData {
   avgLikes?: number;
   avgComments?: number;
   engagementRate?: number;
+  dataSource?: 'api' | 'search';
   error?: string;
 }
 
@@ -46,6 +50,7 @@ export interface InstagramData {
   followingCount?: number;
   postCount?: number;
   isVerified?: boolean;
+  dataSource?: 'api' | 'scrape' | 'unavailable';
   error?: string;
 }
 

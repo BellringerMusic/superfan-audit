@@ -141,6 +141,7 @@ export default function ReportResultPage() {
                     p.strengthRating === 'Strong' ? 'bg-green-500/20 text-green-400' :
                     p.strengthRating === 'Growing' ? 'bg-yellow-500/20 text-yellow-400' :
                     p.strengthRating === 'Not Found' ? 'bg-red-500/20 text-red-400' :
+                    p.strengthRating === 'Scan Limited' ? 'bg-gray-500/20 text-gray-400' :
                     'bg-yellow-500/20 text-yellow-400'
                   }`}>
                     {p.strengthRating}

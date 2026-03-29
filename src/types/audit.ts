@@ -55,7 +55,7 @@ export interface PlatformBreakdown {
   icon: string;
   found: boolean;
   metrics: Record<string, string | number>;
-  strengthRating: 'Strong' | 'Growing' | 'Needs Work' | 'Not Found';
+  strengthRating: 'Strong' | 'Growing' | 'Needs Work' | 'Not Found' | 'Scan Limited';
   insight: string;
   score: number;
 }

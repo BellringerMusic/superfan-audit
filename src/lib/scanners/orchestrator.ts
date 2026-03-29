@@ -1,22 +1,18 @@
 import { AuditFormData } from '@/types/audit';
-import { ScanResults } from '@/types/platforms';
+import { ScanResults, SpotifyData, YouTubeData, InstagramData, TikTokData, WebPresenceData } from '@/types/platforms';
 import { scanSpotify } from './spotify';
 import { scanYouTube } from './youtube';
 import { scanInstagram } from './instagram';
 import { scanTikTok } from './tiktok';
 import { scanWebPresence } from './web-presence';
 
-type ProgressCallback = (progress: number, step: string) => Promise<void>;
-
 export async function runAllScanners(
   formData: AuditFormData,
-  onProgress?: ProgressCallback
 ): Promise<ScanResults> {
   const errors: { platform: string; error: string }[] = [];
 
-  await onProgress?.(10, 'Starting platform scans...');
-
-  const scanPromises = [
+  // Run all scanners in parallel with individual error handling
+  const [spotifyResult, youtubeResult, instagramResult, tiktokResult, webResult] = await Promise.allSettled([
     formData.spotifyUrl || formData.artistName
       ? scanSpotify(formData.spotifyUrl, formData.artistName)
       : Promise.resolve(null),
@@ -32,25 +28,19 @@ export async function runAllScanners(
     formData.websiteUrl || formData.artistName
       ? scanWebPresence(formData.websiteUrl, formData.artistName)
       : Promise.resolve(null),
-  ];
+  ]);
 
-  await onProgress?.(20, 'Scanning your platforms...');
+  const spotify: SpotifyData | null = spotifyResult.status === 'fulfilled' ? spotifyResult.value : null;
+  const youtube: YouTubeData | null = youtubeResult.status === 'fulfilled' ? youtubeResult.value : null;
+  const instagram: InstagramData | null = instagramResult.status === 'fulfilled' ? instagramResult.value : null;
+  const tiktok: TikTokData | null = tiktokResult.status === 'fulfilled' ? tiktokResult.value : null;
+  const webPresence: WebPresenceData | null = webResult.status === 'fulfilled' ? webResult.value : null;
 
-  const results = await Promise.allSettled(scanPromises);
-
-  await onProgress?.(60, 'Processing scan results...');
-
-  const spotify = results[0].status === 'fulfilled' ? results[0].value : null;
-  const youtube = results[1].status === 'fulfilled' ? results[1].value : null;
-  const instagram = results[2].status === 'fulfilled' ? results[2].value : null;
-  const tiktok = results[3].status === 'fulfilled' ? results[3].value : null;
-  const webPresence = results[4].status === 'fulfilled' ? results[4].value : null;
-
-  if (results[0].status === 'rejected') errors.push({ platform: 'Spotify', error: results[0].reason?.message || 'Unknown error' });
-  if (results[1].status === 'rejected') errors.push({ platform: 'YouTube', error: results[1].reason?.message || 'Unknown error' });
-  if (results[2].status === 'rejected') errors.push({ platform: 'Instagram', error: results[2].reason?.message || 'Unknown error' });
-  if (results[3].status === 'rejected') errors.push({ platform: 'TikTok', error: results[3].reason?.message || 'Unknown error' });
-  if (results[4].status === 'rejected') errors.push({ platform: 'Web', error: results[4].reason?.message || 'Unknown error' });
+  if (spotifyResult.status === 'rejected') errors.push({ platform: 'Spotify', error: spotifyResult.reason?.message || 'Unknown error' });
+  if (youtubeResult.status === 'rejected') errors.push({ platform: 'YouTube', error: youtubeResult.reason?.message || 'Unknown error' });
+  if (instagramResult.status === 'rejected') errors.push({ platform: 'Instagram', error: instagramResult.reason?.message || 'Unknown error' });
+  if (tiktokResult.status === 'rejected') errors.push({ platform: 'TikTok', error: tiktokResult.reason?.message || 'Unknown error' });
+  if (webResult.status === 'rejected') errors.push({ platform: 'Web', error: webResult.reason?.message || 'Unknown error' });
 
   return { spotify, youtube, instagram, tiktok, webPresence, errors };
 }

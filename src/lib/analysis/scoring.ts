@@ -54,17 +54,19 @@ export function calculateScores(scanResults: ScanResults): {
   // Spotify scoring (max 25 points)
   let spotifyScore = 0;
   if (spotify?.found) {
-    spotifyScore += 5; // presence bonus
+    // Use followers for scoring (direct from API — accurate)
+    const followers = spotify.followerCount || 0;
+    spotifyScore += tierScore(followers);
     const releases = spotify.totalReleases || 0;
-    spotifyScore += Math.min(10, Math.round(releases * 0.5));
-    const genreScore = (spotify.genres?.length || 0) > 0 ? 5 : 0;
-    spotifyScore += genreScore;
+    spotifyScore += Math.min(5, Math.round(releases * 0.25));
     spotifyScore = Math.min(25, spotifyScore);
     platformBreakdowns.push({
       platform: 'Spotify',
       icon: '♫',
       found: true,
       metrics: {
+        followers: followers > 0 ? formatNumber(followers) : 'N/A',
+        popularity: spotify.popularity || 0,
         genres: (spotify.genres || []).slice(0, 3).join(', ') || 'Not categorized',
         albums: spotify.albumCount || 0,
         singles: spotify.singleCount || 0,
@@ -130,17 +132,26 @@ export function calculateScores(scanResults: ScanResults): {
   // Social scoring (max 10 points)
   let socialScore = 0;
   if (instagram?.found) {
-    socialScore += 5;
+    const igHasData = instagram.dataSource !== 'unavailable' && instagram.followerCount;
+    if (igHasData) {
+      socialScore += 5;
+    } else {
+      socialScore += 2; // presence credit only — we know the account exists
+    }
     platformBreakdowns.push({
       platform: 'Instagram',
       icon: '📷',
       found: true,
       metrics: {
-        followers: instagram.followerCount ? formatNumber(instagram.followerCount) : 'Unknown',
-        posts: instagram.postCount || 'Unknown',
+        followers: igHasData ? formatNumber(instagram.followerCount!) : 'Could not retrieve — Instagram restricts server access',
+        posts: instagram.postCount || (igHasData ? 0 : 'Could not retrieve'),
       },
-      strengthRating: (instagram.followerCount || 0) >= 10000 ? 'Strong' : (instagram.followerCount || 0) >= 1000 ? 'Growing' : 'Needs Work',
-      insight: generateInstagramInsight(instagram),
+      strengthRating: igHasData
+        ? ((instagram.followerCount || 0) >= 10000 ? 'Strong' : (instagram.followerCount || 0) >= 1000 ? 'Growing' : 'Needs Work')
+        : 'Scan Limited',
+      insight: igHasData
+        ? generateInstagramInsight(instagram)
+        : 'Instagram restricts automated access. Your profile was confirmed but detailed metrics could not be retrieved. This does not affect your overall score significantly.',
       score: Math.min(5, socialScore),
     });
   }
@@ -183,9 +194,12 @@ function generateYouTubeInsight(yt: NonNullable<ScanResults['youtube']>): string
 }
 
 function generateSpotifyInsight(sp: NonNullable<ScanResults['spotify']>): string {
-  if ((sp.totalReleases || 0) >= 20) return 'Deep catalog. Fans who discover you have plenty to explore, which builds long-term loyalty.';
-  if ((sp.totalReleases || 0) >= 5) return 'Growing discography. Keep releasing consistently to keep fans engaged and attract new listeners.';
-  return 'Early stages. Focus on building a catalog of at least 10-15 tracks to establish credibility on streaming platforms.';
+  const followers = sp.followerCount || 0;
+  const releases = sp.totalReleases || 0;
+  if (followers >= 10000 && releases >= 10) return `${formatNumber(followers)} followers with ${releases} releases. Strong catalog depth that keeps fans engaged and drives algorithmic recommendations.`;
+  if (followers >= 1000) return `${formatNumber(followers)} followers. Growing presence — consistent releases and playlist placements will accelerate growth.`;
+  if (releases >= 5) return `${releases} releases building your catalog. Focus on playlist submissions and fan engagement to grow your follower base.`;
+  return 'Early stages on Spotify. Focus on building a catalog of at least 10-15 tracks to establish credibility and trigger algorithmic recommendations.';
 }
 
 function generateWebInsight(web: NonNullable<ScanResults['webPresence']>): string {

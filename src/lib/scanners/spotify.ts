@@ -33,8 +33,10 @@ export async function scanSpotify(spotifyUrl: string, artistName: string): Promi
     const headers = { Authorization: `Bearer ${token}` };
 
     let artistId = extractSpotifyArtistId(spotifyUrl);
+    let dataSource: 'api' | 'search' = 'api';
 
     if (!artistId && artistName) {
+      dataSource = 'search';
       const searchRes = await fetch(
         `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=5`,
         { headers }
@@ -42,15 +44,17 @@ export async function scanSpotify(spotifyUrl: string, artistName: string): Promi
       if (searchRes.ok) {
         const searchData = await searchRes.json();
         const artists = searchData.artists?.items || [];
+        // Only use exact name match when searching by name — never grab
+        // the first random result, as that leads to wrong artist data
         const match = artists.find(
           (a: { name: string }) => a.name.toLowerCase() === artistName.toLowerCase()
-        ) || artists[0];
+        );
         if (match) artistId = match.id;
       }
     }
 
     if (!artistId) {
-      return { found: false, error: 'Artist not found on Spotify' };
+      return { found: false, error: 'Artist not found on Spotify. Try providing a direct Spotify URL.' };
     }
 
     const artistRes = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, { headers });
@@ -84,6 +88,8 @@ export async function scanSpotify(spotifyUrl: string, artistName: string): Promi
       found: true,
       artistId,
       name: artist.name,
+      followerCount: artist.followers?.total || 0,
+      popularity: artist.popularity || 0,
       genres: artist.genres || [],
       images: artist.images || [],
       externalUrl: artist.external_urls?.spotify,
@@ -91,6 +97,7 @@ export async function scanSpotify(spotifyUrl: string, artistName: string): Promi
       singleCount,
       totalReleases: albumCount + singleCount,
       latestRelease,
+      dataSource,
     };
   } catch (error) {
     return { found: false, error: error instanceof Error ? error.message : 'Spotify scan failed' };
