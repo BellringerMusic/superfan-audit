@@ -157,9 +157,6 @@ export default function ReportResultPage() {
           <h2 className="text-xl font-bold text-white mb-2">Recommended Monetization Strategy</h2>
           <h3 className="text-lg text-purple-300 font-semibold mb-3">{result.recommendedOffer.title}</h3>
           <p className="text-gray-300 text-sm mb-4">{result.recommendedOffer.description}</p>
-          {result.recommendedOffer.potentialRevenue && (
-            <p className="text-sm text-purple-400 font-medium">Potential Revenue: {result.recommendedOffer.potentialRevenue}</p>
-          )}
         </div>
 
         {/* Action items */}
