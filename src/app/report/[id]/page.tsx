@@ -158,15 +158,39 @@ export default function ReportPage() {
           </a>
         </div>
 
-        {/* Share */}
-        <div className="text-center pb-12">
-          <p className="text-gray-500 text-sm mb-4">Know another artist who could use this?</p>
-          <Link
-            href="/"
-            className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
-          >
-            Share the Superfan Audit →
-          </Link>
+        {/* Next Steps */}
+        <div className="py-12 border-t border-[#2D2D44]">
+          <h3 className="text-center text-lg font-bold text-white mb-2">Ready to Take Action?</h3>
+          <p className="text-center text-gray-400 text-sm mb-8">This report is just the beginning. Take the next step in your music career.</p>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-8">
+            <a
+              href="https://globallaunchpadmastermind.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#141420] border border-[#2D2D44] hover:border-purple-500/50 rounded-lg p-6 text-center transition-colors group"
+            >
+              <p className="text-white font-semibold mb-2 group-hover:text-purple-400 transition-colors">Global Launchpad Mastermind</p>
+              <p className="text-gray-500 text-sm">Join a mastermind of independent artists scaling their careers with proven strategies and direct mentorship.</p>
+            </a>
+            <a
+              href="https://wealthandimpactai.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#141420] border border-[#2D2D44] hover:border-purple-500/50 rounded-lg p-6 text-center transition-colors group"
+            >
+              <p className="text-white font-semibold mb-2 group-hover:text-purple-400 transition-colors">Wealth &amp; Impact AI Accelerator</p>
+              <p className="text-gray-500 text-sm">Leverage AI to build wealth, create impact, and accelerate your music business to new heights.</p>
+            </a>
+          </div>
+          <div className="text-center">
+            <p className="text-gray-500 text-sm mb-4">Know another artist who could use this?</p>
+            <Link
+              href="/"
+              className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+            >
+              Share the Superfan Audit →
+            </Link>
+          </div>
         </div>
       </div>
     </main>
