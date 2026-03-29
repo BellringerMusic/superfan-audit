@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import { fullFormSchema } from '@/lib/validators';
@@ -9,37 +10,25 @@ import { generateBenchmarkComparison } from '@/lib/analysis/benchmarks';
 import { generateBrandSummary } from '@/lib/analysis/brand-summary';
 import { generateReport } from '@/lib/pdf/generate-report';
 import { subscribeToConvertKit } from '@/lib/convertkit';
+import { sendLeadNotification } from '@/lib/notifications';
 import { setJob, storePdf } from '@/lib/storage';
 import { AuditFormData, AuditJob, AuditResult } from '@/types/audit';
 
 export const maxDuration = 60;
 
-export async function POST(request: NextRequest) {
+async function processAuditInBackground(jobId: string, formData: AuditFormData) {
+  const job: AuditJob = {
+    id: jobId,
+    status: 'processing',
+    progress: 5,
+    currentStep: 'Initializing your audit...',
+    formData,
+    createdAt: new Date().toISOString(),
+  };
+
   try {
-    const body = await request.json();
-    const parsed = fullFormSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid form data', details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
-
-    const formData = parsed.data as AuditFormData;
-    const jobId = nanoid(12);
-
-    const job: AuditJob = {
-      id: jobId,
-      status: 'processing',
-      progress: 5,
-      currentStep: 'Initializing your audit...',
-      formData,
-      createdAt: new Date().toISOString(),
-    };
-    await setJob(jobId, job);
-
     // Subscribe to ConvertKit (fire-and-forget)
+    // All email subscribers go to ConvertKit (Kit) — manage at https://app.kit.com
     subscribeToConvertKit({
       email: formData.email,
       firstName: formData.name,
@@ -49,6 +38,14 @@ export async function POST(request: NextRequest) {
         genre: formData.genre,
       },
     }).catch(err => console.error('ConvertKit error:', err));
+
+    // Notify bellringerproductions@gmail.com about the new lead (fire-and-forget)
+    sendLeadNotification({
+      email: formData.email,
+      artistName: formData.artistName,
+      name: formData.name,
+      monthlyIncome: formData.monthlyIncome,
+    }).catch(err => console.error('Lead notification error:', err));
 
     // Run scanners
     const updateProgress = async (progress: number, step: string) => {
@@ -112,8 +109,54 @@ export async function POST(request: NextRequest) {
     job.result = result;
     job.pdfUrl = pdfUrl;
     await setJob(jobId, job);
+  } catch (error) {
+    console.error('Audit background processing error:', error);
+    job.status = 'error';
+    job.progress = 0;
+    job.currentStep = 'Something went wrong';
+    job.error = error instanceof Error ? error.message : 'An unexpected error occurred';
+    await setJob(jobId, job);
+  }
+}
 
-    return NextResponse.json({ jobId, status: 'complete', pdfUrl });
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const parsed = fullFormSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid form data', details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const formData = parsed.data as AuditFormData;
+    const jobId = nanoid(12);
+
+    // Store initial job state immediately
+    const job: AuditJob = {
+      id: jobId,
+      status: 'processing',
+      progress: 5,
+      currentStep: 'Initializing your audit...',
+      formData,
+      createdAt: new Date().toISOString(),
+    };
+    await setJob(jobId, job);
+
+    // Kick off background processing using after() to keep the
+    // serverless function alive after the response is sent
+    after(async () => {
+      try {
+        await processAuditInBackground(jobId, formData);
+      } catch (err) {
+        console.error('Unhandled audit background error:', err);
+      }
+    });
+
+    // Return jobId immediately so client can start polling
+    return NextResponse.json({ jobId, status: 'processing' });
   } catch (error) {
     console.error('Audit error:', error);
     return NextResponse.json(

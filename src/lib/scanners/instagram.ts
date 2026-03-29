@@ -12,6 +12,7 @@ export async function scanInstagram(handle: string): Promise<InstagramData> {
         'Accept': 'text/html',
       },
       redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!res.ok) {

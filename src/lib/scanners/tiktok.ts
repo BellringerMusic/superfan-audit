@@ -12,6 +12,7 @@ export async function scanTikTok(handle: string): Promise<TikTokData> {
         'Accept': 'text/html',
       },
       redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!res.ok) {

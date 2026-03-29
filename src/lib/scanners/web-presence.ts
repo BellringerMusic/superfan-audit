@@ -36,7 +36,8 @@ export async function scanWebPresence(websiteUrl: string, artistName: string): P
       try {
         const query = `"${artistName}" musician OR artist OR music`;
         const res = await fetch(
-          `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&key=${apiKey}&cx=${searchEngineId}&num=10`
+          `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&key=${apiKey}&cx=${searchEngineId}&num=10`,
+          { signal: AbortSignal.timeout(10000) }
         );
         if (res.ok) {
           const data = await res.json();
