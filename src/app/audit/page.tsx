@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -45,8 +45,18 @@ export default function AuditPage() {
         throw new Error(err.error || 'Something went wrong');
       }
 
-      const { jobId } = await res.json();
-      router.push(`/processing?jobId=${jobId}`);
+      const responseData = await res.json();
+
+      if (responseData.status === 'complete' && responseData.result) {
+        // Store result in sessionStorage for the report page
+        sessionStorage.setItem('auditResult', JSON.stringify(responseData.result));
+        if (responseData.pdfBase64) {
+          sessionStorage.setItem('auditPdfBase64', responseData.pdfBase64);
+        }
+        router.push('/report/result');
+      } else {
+        throw new Error('Audit did not complete successfully');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setIsSubmitting(false);
@@ -57,6 +67,11 @@ export default function AuditPage() {
   const selectClass = "w-full bg-[#141420] border border-[#2D2D44] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors appearance-none";
   const labelClass = "block text-sm font-medium text-gray-300 mb-1.5";
   const errorClass = "text-red-400 text-sm mt-1";
+
+  // Show processing animation while waiting for API
+  if (isSubmitting) {
+    return <ProcessingAnimation />;
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-12">
@@ -204,6 +219,95 @@ export default function AuditPage() {
             </div>
           </form>
         )}
+      </div>
+    </main>
+  );
+}
+
+/* Inline processing animation shown while the API is working */
+function ProcessingAnimation() {
+  const STEPS = [
+    'Received your information',
+    'Scanning Spotify...',
+    'Scanning YouTube...',
+    'Scanning social media...',
+    'Analyzing your audience...',
+    'Generating your report...',
+  ];
+
+  const [activeStepIdx, setActiveStepIdx] = useState(0);
+  const [progress, setProgress] = useState(5);
+
+  // Simulate progress ticking up while we wait for the API
+  useEffect(() => {
+    let idx = 0;
+    const stepInterval = setInterval(() => {
+      idx = Math.min(idx + 1, STEPS.length - 1);
+      setActiveStepIdx(idx);
+      // Simulate progress: 5 → ~85 over ~30s, but never hit 100
+      setProgress(prev => Math.min(prev + Math.random() * 12 + 3, 88));
+    }, 4000);
+
+    // Also tick progress more smoothly
+    const progressTick = setInterval(() => {
+      setProgress(prev => Math.min(prev + Math.random() * 2 + 0.5, 90));
+    }, 1500);
+
+    return () => {
+      clearInterval(stepInterval);
+      clearInterval(progressTick);
+    };
+  }, []);
+
+  return (
+    <main className="min-h-screen flex items-center justify-center px-4">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-12">
+          <h1 className="text-2xl font-bold text-white mb-2">Building Your Report</h1>
+          <p className="text-gray-400">This usually takes about 15-30 seconds.</p>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mb-10">
+          <div className="h-2 bg-[#1A1A2E] rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-gradient-to-r from-purple-600 to-pink-500 rounded-full transition-all duration-1000 ease-out"
+              style={{ width: `${Math.round(progress)}%` }}
+            />
+          </div>
+          <p className="text-sm text-gray-500 mt-2 text-center">{Math.round(progress)}%</p>
+        </div>
+
+        {/* Steps */}
+        <div className="space-y-4">
+          {STEPS.map((stepText, i) => {
+            const isComplete = i < activeStepIdx;
+            const isActive = i === activeStepIdx;
+
+            return (
+              <div key={i} className="flex items-center gap-4">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                  isComplete ? 'bg-green-500/20 text-green-400' :
+                  isActive ? 'bg-purple-600/20 text-purple-400' :
+                  'bg-[#1A1A2E] text-gray-600'
+                }`}>
+                  {isComplete ? '✓' : isActive ? (
+                    <span className="w-3 h-3 rounded-full bg-purple-400 animate-pulse" />
+                  ) : (
+                    <span className="w-2 h-2 rounded-full bg-gray-600" />
+                  )}
+                </div>
+                <span className={`text-sm transition-colors ${
+                  isComplete ? 'text-green-400' :
+                  isActive ? 'text-white' :
+                  'text-gray-600'
+                }`}>
+                  {stepText}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </main>
   );

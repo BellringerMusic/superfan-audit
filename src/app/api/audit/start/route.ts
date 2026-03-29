@@ -1,6 +1,4 @@
-import { after } from 'next/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { nanoid } from 'nanoid';
 import { fullFormSchema } from '@/lib/validators';
 import { runAllScanners } from '@/lib/scanners/orchestrator';
 import { calculateScores } from '@/lib/analysis/scoring';
@@ -11,23 +9,25 @@ import { generateBrandSummary } from '@/lib/analysis/brand-summary';
 import { generateReport } from '@/lib/pdf/generate-report';
 import { subscribeToConvertKit } from '@/lib/convertkit';
 import { sendLeadNotification } from '@/lib/notifications';
-import { setJob, storePdf } from '@/lib/storage';
-import { AuditFormData, AuditJob, AuditResult } from '@/types/audit';
+import { AuditFormData, AuditResult } from '@/types/audit';
 
 export const maxDuration = 60;
 
-async function processAuditInBackground(jobId: string, formData: AuditFormData) {
-  const job: AuditJob = {
-    id: jobId,
-    status: 'processing',
-    progress: 5,
-    currentStep: 'Initializing your audit...',
-    formData,
-    createdAt: new Date().toISOString(),
-  };
-
+export async function POST(request: NextRequest) {
   try {
-    // Subscribe to ConvertKit (fire-and-forget)
+    const body = await request.json();
+    const parsed = fullFormSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid form data', details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const formData = parsed.data as AuditFormData;
+
+    // Fire-and-forget: subscribe to ConvertKit + send lead notification
     // All email subscribers go to ConvertKit (Kit) — manage at https://app.kit.com
     subscribeToConvertKit({
       email: formData.email,
@@ -39,7 +39,7 @@ async function processAuditInBackground(jobId: string, formData: AuditFormData) 
       },
     }).catch(err => console.error('ConvertKit error:', err));
 
-    // Notify bellringerproductions@gmail.com about the new lead (fire-and-forget)
+    // Notify bellringerproductions@gmail.com about the new lead
     sendLeadNotification({
       email: formData.email,
       artistName: formData.artistName,
@@ -47,17 +47,10 @@ async function processAuditInBackground(jobId: string, formData: AuditFormData) 
       monthlyIncome: formData.monthlyIncome,
     }).catch(err => console.error('Lead notification error:', err));
 
-    // Run scanners
-    const updateProgress = async (progress: number, step: string) => {
-      job.progress = progress;
-      job.currentStep = step;
-      await setJob(jobId, { ...job });
-    };
+    // Run all platform scanners in parallel
+    const scanResults = await runAllScanners(formData);
 
-    const scanResults = await runAllScanners(formData, updateProgress);
-
-    // Analyze
-    await updateProgress(70, 'Analyzing your audience...');
+    // Analyze results
     const { scoreBreakdown, platformBreakdowns } = calculateScores(scanResults);
     const superfanAnalysis = analyzeSuperfanPotential(scanResults);
     const recommendedOffer = generateRecommendation(scanResults, formData.monthlyIncome, scoreBreakdown.total);
@@ -84,12 +77,16 @@ async function processAuditInBackground(jobId: string, formData: AuditFormData) 
       scannedAt: new Date().toISOString(),
     };
 
-    // Generate PDF
-    await updateProgress(85, 'Generating your report...');
-    const pdfBuffer = await generateReport(result);
-    const pdfUrl = await storePdf(jobId, pdfBuffer);
+    // Generate PDF and convert to base64 for client download
+    let pdfBase64: string | null = null;
+    try {
+      const pdfBuffer = await generateReport(result);
+      pdfBase64 = pdfBuffer.toString('base64');
+    } catch (err) {
+      console.error('PDF generation error:', err);
+    }
 
-    // Update ConvertKit with score
+    // Update ConvertKit with audit score (fire-and-forget)
     subscribeToConvertKit({
       email: formData.email,
       firstName: formData.name,
@@ -102,61 +99,11 @@ async function processAuditInBackground(jobId: string, formData: AuditFormData) 
       },
     }).catch(err => console.error('ConvertKit update error:', err));
 
-    // Mark complete
-    job.status = 'complete';
-    job.progress = 100;
-    job.currentStep = 'Your report is ready!';
-    job.result = result;
-    job.pdfUrl = pdfUrl;
-    await setJob(jobId, job);
-  } catch (error) {
-    console.error('Audit background processing error:', error);
-    job.status = 'error';
-    job.progress = 0;
-    job.currentStep = 'Something went wrong';
-    job.error = error instanceof Error ? error.message : 'An unexpected error occurred';
-    await setJob(jobId, job);
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const parsed = fullFormSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid form data', details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
-
-    const formData = parsed.data as AuditFormData;
-    const jobId = nanoid(12);
-
-    // Store initial job state immediately
-    const job: AuditJob = {
-      id: jobId,
-      status: 'processing',
-      progress: 5,
-      currentStep: 'Initializing your audit...',
-      formData,
-      createdAt: new Date().toISOString(),
-    };
-    await setJob(jobId, job);
-
-    // Kick off background processing using after() to keep the
-    // serverless function alive after the response is sent
-    after(async () => {
-      try {
-        await processAuditInBackground(jobId, formData);
-      } catch (err) {
-        console.error('Unhandled audit background error:', err);
-      }
+    return NextResponse.json({
+      status: 'complete',
+      result,
+      pdfBase64,
     });
-
-    // Return jobId immediately so client can start polling
-    return NextResponse.json({ jobId, status: 'processing' });
   } catch (error) {
     console.error('Audit error:', error);
     return NextResponse.json(
