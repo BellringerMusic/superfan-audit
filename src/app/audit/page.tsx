@@ -16,7 +16,7 @@ export default function AuditPage() {
 
   const form1 = useForm<Step1Data>({ resolver: zodResolver(step1Schema), defaultValues: { name: '', email: '', consent: false as unknown as true } });
   const form2 = useForm<Step2Data>({ resolver: zodResolver(step2Schema), defaultValues: { artistName: '', genre: '', monthlyIncome: '', yearsActive: '' } });
-  const form3 = useForm<Step3Data>({ resolver: zodResolver(step3Schema), defaultValues: { spotifyUrl: '', youtubeUrl: '', instagramHandle: '', tiktokHandle: '', websiteUrl: '' } });
+  const form3 = useForm<Step3Data>({ resolver: zodResolver(step3Schema), defaultValues: { spotifyUrl: '', youtubeUrl: '', instagramHandle: '', instagramFollowers: '', tiktokHandle: '', websiteUrl: '' } });
 
   const handleStep1 = form1.handleSubmit((data) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -189,6 +189,14 @@ export default function AuditPage() {
               <label className={labelClass}>📷 Instagram Handle</label>
               <input {...form3.register('instagramHandle')} className={inputClass} placeholder="@yourhandle" />
               {form3.formState.errors.instagramHandle && <p className={errorClass}>{form3.formState.errors.instagramHandle.message}</p>}
+              {form3.watch('instagramHandle') && (
+                <div className="mt-3">
+                  <label className={labelClass}>Instagram Followers <span className="text-gray-500 font-normal">(optional)</span></label>
+                  <input {...form3.register('instagramFollowers')} className={inputClass} placeholder="e.g. 12500" inputMode="numeric" />
+                  <p className="text-xs text-gray-500 mt-1">Instagram limits automated scanning — entering your follower count ensures accurate results.</p>
+                  {form3.formState.errors.instagramFollowers && <p className={errorClass}>{form3.formState.errors.instagramFollowers.message}</p>}
+                </div>
+              )}
             </div>
             <div>
               <label className={labelClass}>♪ TikTok Handle</label>

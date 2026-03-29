@@ -10,10 +10,15 @@ import { normalizeHandle } from '@/lib/utils';
  * - If we can't get numbers, dataSource = 'unavailable' and we say so honestly
  *   rather than showing wrong data
  */
-export async function scanInstagram(handle: string): Promise<InstagramData> {
+export async function scanInstagram(handle: string, selfReportedFollowers?: string): Promise<InstagramData> {
   if (!handle) return { found: false };
 
   const username = normalizeHandle(handle);
+
+  // Parse self-reported follower count if provided
+  const reportedCount = selfReportedFollowers
+    ? parseInt(selfReportedFollowers.replace(/,/g, ''), 10) || undefined
+    : undefined;
 
   // Strategy 1: Instagram web API endpoint
   const apiResult = await tryWebApi(username);
@@ -27,13 +32,22 @@ export async function scanInstagram(handle: string): Promise<InstagramData> {
     return { ...scrapeResult, dataSource: 'scrape' };
   }
 
-  // If we confirmed the profile exists but couldn't get numbers,
+  // Strategy 3: Use self-reported follower count from the form
+  if (reportedCount) {
+    return {
+      found: true,
+      username,
+      followerCount: reportedCount,
+      dataSource: 'scrape', // treat user-reported as equivalent to scraped data for scoring
+    };
+  }
+
+  // If we couldn't get numbers and none were self-reported,
   // be honest about it rather than showing wrong data
   return {
     found: true,
     username,
     dataSource: 'unavailable',
-    // Don't fabricate or guess follower counts — show nothing rather than wrong data
   };
 }
 

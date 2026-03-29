@@ -9,6 +9,7 @@ export interface AuditFormData {
   spotifyUrl: string;
   youtubeUrl: string;
   instagramHandle: string;
+  instagramFollowers?: string;
   tiktokHandle: string;
   websiteUrl: string;
 }

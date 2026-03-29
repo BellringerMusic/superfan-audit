@@ -45,6 +45,7 @@ export const step3Schema = z.object({
   spotifyUrl: z.string().regex(spotifyUrlPattern, 'Please enter a valid Spotify artist URL').or(z.literal('')),
   youtubeUrl: z.string().regex(youtubeUrlPattern, 'Please enter a valid YouTube channel URL').or(z.literal('')),
   instagramHandle: z.string().regex(instagramHandlePattern, 'Please enter a valid Instagram handle').or(z.literal('')),
+  instagramFollowers: z.string().regex(/^[0-9,]*$/, 'Please enter a number').or(z.literal('')),
   tiktokHandle: z.string().regex(tiktokHandlePattern, 'Please enter a valid TikTok handle').or(z.literal('')),
   websiteUrl: z.string().url('Please enter a valid URL').or(z.literal('')),
 }).refine(
@@ -59,6 +60,7 @@ export const fullFormSchema = step1Schema.merge(step2Schema).merge(
     spotifyUrl: z.string().optional().default(''),
     youtubeUrl: z.string().optional().default(''),
     instagramHandle: z.string().optional().default(''),
+    instagramFollowers: z.string().optional().default(''),
     tiktokHandle: z.string().optional().default(''),
     websiteUrl: z.string().optional().default(''),
   })

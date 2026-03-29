@@ -20,7 +20,7 @@ export async function runAllScanners(
       ? scanYouTube(formData.youtubeUrl, formData.artistName)
       : Promise.resolve(null),
     formData.instagramHandle
-      ? scanInstagram(formData.instagramHandle)
+      ? scanInstagram(formData.instagramHandle, formData.instagramFollowers)
       : Promise.resolve(null),
     formData.tiktokHandle
       ? scanTikTok(formData.tiktokHandle)
