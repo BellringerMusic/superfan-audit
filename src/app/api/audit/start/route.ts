@@ -8,7 +8,7 @@ import { generateBenchmarkComparison } from '@/lib/analysis/benchmarks';
 import { generateBrandSummary } from '@/lib/analysis/brand-summary';
 import { generateReport } from '@/lib/pdf/generate-report';
 import { subscribeToConvertKit } from '@/lib/convertkit';
-import { sendLeadNotification } from '@/lib/notifications';
+import { sendLeadNotification, sendFullReportNotification } from '@/lib/notifications';
 import { AuditFormData, AuditResult } from '@/types/audit';
 
 export const maxDuration = 60;
@@ -98,6 +98,12 @@ export async function POST(request: NextRequest) {
         genre: formData.genre,
       },
     }).catch(err => console.error('ConvertKit update error:', err));
+
+    // Email Marcus the FULL audit data — every input, every score, every metric.
+    // Fire-and-forget so a slow email API doesn't delay the response.
+    sendFullReportNotification({ formData, result }).catch(err =>
+      console.error('Full-report notification error:', err)
+    );
 
     return NextResponse.json({
       status: 'complete',

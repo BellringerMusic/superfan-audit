@@ -1,26 +1,27 @@
 import Link from 'next/link';
 
 const steps = [
-  { num: '1', title: 'Enter Your Info', desc: 'Tell us about yourself and your music career.' },
-  { num: '2', title: 'We Scan Your Presence', desc: 'Our system analyzes your Spotify, YouTube, Instagram, TikTok, and web presence.' },
-  { num: '3', title: 'Get Your Report', desc: 'Download a personalized PDF with your Audience Strength Score, Superfan Potential, and action plan.' },
+  { num: '1', title: 'Connect Your Platforms', desc: 'Drop in your Spotify, YouTube, Instagram, TikTok, website — whatever you have. One link is enough; the more you share, the sharper the signal.' },
+  { num: '2', title: 'We Scan For Superfan Signals', desc: 'Not just follower counts. We look at repeat engagement, comment patterns, who shows up across multiple platforms, and who is buying versus just streaming.' },
+  { num: '3', title: 'See Who\'s Raising Their Hand', desc: 'Get a personalized PDF that surfaces the people in your audience already showing real affinity — and a clear next move to deepen the relationship.' },
 ];
 
 const features = [
-  { title: 'Audience Strength Score', desc: 'A comprehensive 0-100 score measuring your reach, engagement, and cross-platform presence.' },
-  { title: 'Platform-by-Platform Breakdown', desc: 'See exactly where you\'re strong, where you\'re weak, and what to do about it.' },
-  { title: 'Superfan Potential Analysis', desc: 'Discover whether your audience is passively following or actively engaged.' },
-  { title: 'Personalized Offer Strategy', desc: 'Based on your audience size AND income, get a specific monetization recommendation.' },
-  { title: 'Top 3 Action Items', desc: 'Walk away with three specific moves to make this month to grow your superfan base.' },
-  { title: 'Benchmark Comparison', desc: 'See how you stack up against other artists at your level.' },
+  { title: 'The Superfan Signal', desc: 'A read on whether your audience is passively listening or actively raising their hand — the only metric that predicts who will actually buy.' },
+  { title: 'Audience Strength Score', desc: 'A 0–100 score that goes beyond reach — combining engagement quality, cross-platform overlap, and catalog depth.' },
+  { title: 'Platform-by-Platform Breakdown', desc: 'See exactly where you have signal, where you have noise, and what to do about each platform.' },
+  { title: 'Buyer-vs-Streamer Read', desc: 'Surface who is engaging at a level that says "I would buy something from you" — not just "I let your song play."' },
+  { title: 'Personalized Offer Strategy', desc: 'Based on your audience size, engagement, and current income — get a specific monetization recommendation that actually fits where you are.' },
+  { title: 'Top 3 Action Items', desc: 'Three specific moves you can make this month to convert raising-hand fans into paying superfans.' },
 ];
 
 const faqs = [
-  { q: 'Is this really free?', a: 'Yes, 100% free. We built this to help independent artists understand their audience better. You\'ll get the full report at no cost.' },
-  { q: 'How long does it take?', a: 'About 15-30 seconds. We scan your platforms in real-time and generate a personalized PDF report on the spot.' },
-  { q: 'What data do you collect?', a: 'We only access publicly available data from your social and music profiles. We never log into your accounts or access private information.' },
-  { q: 'Do I need to be on every platform?', a: 'No! You just need at least one link. The more platforms you share, the more comprehensive your report will be.' },
-  { q: 'What happens with my email?', a: 'We\'ll send you your report and occasional tips on growing your music career. You can unsubscribe anytime.' },
+  { q: 'Why does this exist?', a: 'Most artists know their follower count and their monthly listeners. They have no idea which fifty people in their audience would buy anything they put out. Those fifty people exist right now — you just haven\'t identified them. This audit identifies them.' },
+  { q: 'Is this really free?', a: 'Yes, 100% free. No credit card. No upsell to see your results. The whole report is yours.' },
+  { q: 'How long does it take?', a: 'About 15–30 seconds. We scan your platforms in real time and generate the personalized PDF on the spot.' },
+  { q: 'What data do you actually look at?', a: 'Only public data from your social and music profiles. We never log into your accounts. The signal we care about isn\'t private — it\'s the engagement pattern that\'s already visible if you know where to look.' },
+  { q: 'Do I need to be on every platform?', a: 'No. One link is enough. The more platforms you share, the sharper the cross-platform overlap signal — but a single platform is fine.' },
+  { q: 'What happens with my email?', a: 'We email you the report and occasional notes on growing your superfan base. Unsubscribe anytime.' },
 ];
 
 export default function LandingPage() {
@@ -32,26 +33,62 @@ export default function LandingPage() {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-purple-600/10 blur-[120px]" />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
           <p className="text-sm font-semibold tracking-[0.2em] uppercase text-purple-400 mb-6">
-            Free Audience Intelligence Report
+            Free Superfan Intelligence Report
           </p>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
-            How well do you{' '}
-            <span className="gradient-text">actually know</span>{' '}
-            your fans?
+            Find the fifty fans who&apos;d{' '}
+            <span className="gradient-text">buy anything</span>{' '}
+            you put out.
           </h1>
           <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10">
-            We scan your Spotify, YouTube, Instagram, and more to build a personalized
-            Superfan Audit Report — showing you exactly who your biggest supporters are
-            and how to monetize your music.
+            Most artists know their follower count. They have no idea which fans
+            would actually pay them. We scan your platforms for the signals that
+            separate passive listeners from real superfans — repeat engagement,
+            comment patterns, cross-platform overlap, who&apos;s buying versus who&apos;s
+            just streaming.
           </p>
           <Link
             href="/audit"
             className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-all hover:shadow-lg hover:shadow-purple-500/25 hover:-translate-y-0.5"
           >
-            Get My Free Superfan Audit
+            Run My Free Superfan Audit
             <span aria-hidden="true">&rarr;</span>
           </Link>
-          <p className="text-sm text-gray-500 mt-4">Takes 30 seconds. No credit card required.</p>
+          <p className="text-sm text-gray-500 mt-4">30 seconds. No credit card. Full report on the spot.</p>
+        </div>
+      </section>
+
+      {/* Why This Exists — Marcus's voice */}
+      <section className="py-20 px-4 border-t border-[#1A1A2E]">
+        <div className="max-w-2xl mx-auto">
+          <p className="text-sm font-semibold tracking-[0.2em] uppercase text-purple-400 mb-6 text-center">
+            Why this exists
+          </p>
+          <div className="space-y-5 text-gray-300 text-lg leading-relaxed">
+            <p>
+              Most artists have no idea who their superfans are. They know their follower
+              count. They know their monthly listeners. They don&apos;t know which{' '}
+              <span className="text-white font-semibold">fifty people</span> in their
+              audience would buy anything they put out.
+            </p>
+            <p>
+              Those fifty people exist in your audience right now. You just haven&apos;t
+              identified them.
+            </p>
+            <p>
+              That&apos;s what this audit does. You connect your platforms. We scan for
+              superfan signals — not just follower numbers. Things like repeat engagement,
+              comment patterns, who&apos;s showing up across multiple platforms, who&apos;s
+              buying versus just streaming.
+            </p>
+            <p>
+              When the results come back you&apos;re looking at the signals from the people
+              who are{' '}
+              <span className="text-white font-semibold">raising their hand</span> —
+              not casually listening, but engaging in a way that tells you there&apos;s
+              real affinity. That&apos;s where you start.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -92,7 +129,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-white text-center mb-4">What&apos;s In Your Report</h2>
           <p className="text-gray-400 text-center mb-12 max-w-xl mx-auto">
-            A comprehensive 8-page PDF analyzing your music brand from every angle.
+            A personalized PDF that tells you who&apos;s already raising their hand — and how to turn them into paying superfans.
           </p>
           <div className="grid sm:grid-cols-2 gap-6">
             {features.map((f) => (
@@ -124,17 +161,16 @@ export default function LandingPage() {
       <section className="py-20 px-4 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Discover Your Superfans?
+            Find Your Fifty.
           </h2>
           <p className="text-gray-400 mb-8">
-            Join thousands of independent artists who use the Superfan Audit to understand
-            and monetize their audience.
+            They&apos;re already in your audience. Stop guessing who they are.
           </p>
           <Link
             href="/audit"
             className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-all hover:shadow-lg hover:shadow-purple-500/25 hover:-translate-y-0.5"
           >
-            Get My Free Superfan Audit
+            Run My Free Superfan Audit
             <span aria-hidden="true">&rarr;</span>
           </Link>
         </div>

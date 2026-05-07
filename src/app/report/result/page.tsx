@@ -72,7 +72,7 @@ export default function ReportResultPage() {
     <main className="min-h-screen px-4 py-12">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <p className="text-sm font-semibold tracking-[0.2em] uppercase text-purple-400 mb-4">
             Your Superfan Audit Report
           </p>
@@ -80,6 +80,34 @@ export default function ReportResultPage() {
           <p className="text-gray-400">
             Generated {new Date(result.scannedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
+        </div>
+
+        {/* Raising-their-hand callout — the core framing */}
+        <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/20 border border-purple-500/30 rounded-xl p-6 sm:p-8 mb-10">
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-300 mb-3">
+            Who&apos;s raising their hand
+          </p>
+          <p className="text-white text-lg sm:text-xl font-semibold leading-snug mb-2">
+            {result.superfanAnalysis.tier}
+          </p>
+          <p className="text-gray-300 text-sm leading-relaxed">
+            {result.superfanAnalysis.description}
+          </p>
+          {result.superfanAnalysis.keyIndicators.length > 0 && (
+            <div className="mt-5 pt-5 border-t border-purple-500/20">
+              <p className="text-xs font-semibold tracking-[0.15em] uppercase text-purple-300/80 mb-3">
+                Signals we picked up
+              </p>
+              <ul className="space-y-2">
+                {result.superfanAnalysis.keyIndicators.map((indicator, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-gray-300">
+                    <span className="text-purple-400 mt-0.5 flex-shrink-0">→</span>
+                    <span>{indicator}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Download button */}
