@@ -29,8 +29,28 @@ export interface YouTubeData {
   avgLikes?: number;
   avgComments?: number;
   engagementRate?: number;
+  topCommenters?: YouTubeCommenter[];
+  commentsScanned?: number;
+  videosScannedForComments?: number;
   dataSource?: 'api' | 'search';
   error?: string;
+}
+
+export interface YouTubeCommenter {
+  /** Display name from the comment author */
+  displayName: string;
+  /** Channel URL of the commenter (if available) */
+  channelUrl?: string;
+  /** Profile image of the commenter */
+  profileImageUrl?: string;
+  /** Number of separate comments left across the scanned videos */
+  commentCount: number;
+  /** Number of distinct videos this person commented on */
+  videosCommentedOn: number;
+  /** Total likes their comments received (signal of fan-of-fans status) */
+  totalLikes: number;
+  /** Whether they appear to also be on the artist's listed Instagram/TikTok (loose match) */
+  crossPlatformMatch?: boolean;
 }
 
 export interface YouTubeVideoStats {

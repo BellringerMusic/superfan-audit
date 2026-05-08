@@ -344,6 +344,66 @@ function CTAPage() {
   );
 }
 
+function SuperfanListPage({ data }: { data: AuditResult }) {
+  const list = data.superfanList!;
+  return (
+    <Page size="A4" style={styles.page}>
+      <Text style={styles.h2}>The People Raising Their Hand</Text>
+      <View style={[styles.card, { borderColor: colors.accent, borderWidth: 1, marginBottom: 16 }]}>
+        <Text style={{ fontSize: 16, fontFamily: 'Helvetica-Bold', color: colors.textBright, marginBottom: 6 }}>
+          {list.headline}
+        </Text>
+        <Text style={[styles.muted, { marginBottom: 0 }]}>{list.source}</Text>
+      </View>
+
+      {list.people.length > 0 ? (
+        <>
+          <Text style={[styles.muted, { marginBottom: 12 }]}>
+            These are the specific commenters showing repeat-engagement signals on your YouTube content. Reply to them by name. Send them a free download. Invite them into your inner circle. This is where your first fifty superfans come from.
+          </Text>
+          {list.people.map((person, i) => (
+            <View key={i} style={[styles.card, { marginBottom: 8, padding: 12 }]}>
+              <View style={[styles.spaceBetween, { marginBottom: 4 }]}>
+                <View style={styles.row}>
+                  <View style={{
+                    width: 24, height: 24, borderRadius: 12, backgroundColor: colors.accent,
+                    justifyContent: 'center', alignItems: 'center', marginRight: 10,
+                  }}>
+                    <Text style={{ color: colors.textBright, fontFamily: 'Helvetica-Bold', fontSize: 11 }}>
+                      {i + 1}
+                    </Text>
+                  </View>
+                  {person.channelUrl ? (
+                    <Link src={person.channelUrl} style={{ fontSize: 13, fontFamily: 'Helvetica-Bold', color: colors.textBright }}>
+                      {person.name}
+                    </Link>
+                  ) : (
+                    <Text style={{ fontSize: 13, fontFamily: 'Helvetica-Bold', color: colors.textBright }}>
+                      {person.name}
+                    </Text>
+                  )}
+                </View>
+                <Text style={[styles.muted, { fontSize: 9 }]}>{person.source}</Text>
+              </View>
+              <Text style={[styles.muted, { fontSize: 10, marginLeft: 34 }]}>{person.signalSummary}</Text>
+              {person.crossPlatform && (
+                <Text style={{ fontSize: 9, color: colors.accent, fontFamily: 'Helvetica-Bold', marginLeft: 34, marginTop: 2 }}>
+                  ALSO MATCHES YOUR IG/TIKTOK HANDLE
+                </Text>
+              )}
+            </View>
+          ))}
+        </>
+      ) : (
+        <View style={[styles.card]}>
+          <Text style={styles.body}>{list.emptyReason}</Text>
+        </View>
+      )}
+      <Text style={styles.pageNumber} render={({ pageNumber }) => `${pageNumber}`} fixed />
+    </Page>
+  );
+}
+
 function ReportDocument({ data }: { data: AuditResult }) {
   return (
     <Document
@@ -356,6 +416,7 @@ function ReportDocument({ data }: { data: AuditResult }) {
       <ScorePage data={data} />
       <PlatformBreakdownPage data={data} />
       <SuperfanAnalysisPage data={data} />
+      {data.superfanList && <SuperfanListPage data={data} />}
       <RecommendationsPage data={data} />
       <ActionItemsPage data={data} />
       <CTAPage />

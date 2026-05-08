@@ -3,12 +3,13 @@ import { fullFormSchema } from '@/lib/validators';
 import { runAllScanners } from '@/lib/scanners/orchestrator';
 import { calculateScores } from '@/lib/analysis/scoring';
 import { analyzeSuperfanPotential } from '@/lib/analysis/superfan-potential';
+import { buildSuperfanList } from '@/lib/analysis/superfan-list';
 import { generateRecommendation, generateActionItems } from '@/lib/analysis/recommendations';
 import { generateBenchmarkComparison } from '@/lib/analysis/benchmarks';
 import { generateBrandSummary } from '@/lib/analysis/brand-summary';
 import { generateReport } from '@/lib/pdf/generate-report';
 import { subscribeToConvertKit } from '@/lib/convertkit';
-import { sendLeadNotification, sendFullReportNotification } from '@/lib/notifications';
+import { sendLeadNotification, sendFullReportNotification, sendReportToArtist } from '@/lib/notifications';
 import { AuditFormData, AuditResult } from '@/types/audit';
 
 export const maxDuration = 60;
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
     // Analyze results
     const { scoreBreakdown, platformBreakdowns } = calculateScores(scanResults);
     const superfanAnalysis = analyzeSuperfanPotential(scanResults);
+    const superfanList = buildSuperfanList(scanResults);
     const recommendedOffer = generateRecommendation(scanResults, formData.monthlyIncome, scoreBreakdown.total);
     const actionItems = generateActionItems(scanResults, formData.monthlyIncome, scoreBreakdown.total);
     const brandSummary = generateBrandSummary(scanResults, formData);
@@ -71,6 +73,7 @@ export async function POST(request: NextRequest) {
       scoreBreakdown,
       platformBreakdowns,
       superfanAnalysis,
+      superfanList,
       recommendedOffer,
       actionItems,
       benchmarkComparison,
@@ -79,11 +82,23 @@ export async function POST(request: NextRequest) {
 
     // Generate PDF and convert to base64 for client download
     let pdfBase64: string | null = null;
+    let pdfBuffer: Buffer | null = null;
     try {
-      const pdfBuffer = await generateReport(result);
+      pdfBuffer = await generateReport(result);
       pdfBase64 = pdfBuffer.toString('base64');
     } catch (err) {
       console.error('PDF generation error:', err);
+    }
+
+    // Email the artist their PDF report so they keep it in their inbox.
+    // Note: Resend's test sender (onboarding@resend.dev) only sends to the
+    // verified account owner. Set up a verified domain in Resend to enable
+    // sending to arbitrary lead emails. Failures are logged but never block
+    // the response so the user still gets their browser-based report.
+    if (pdfBuffer) {
+      sendReportToArtist({ formData, result, pdfBuffer }).catch(err =>
+        console.error('Artist report email error:', err)
+      );
     }
 
     // Update ConvertKit with audit score (fire-and-forget)

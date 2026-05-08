@@ -17,7 +17,10 @@ export async function runAllScanners(
       ? scanSpotify(formData.spotifyUrl, formData.artistName)
       : Promise.resolve(null),
     formData.youtubeUrl || formData.artistName
-      ? scanYouTube(formData.youtubeUrl, formData.artistName)
+      ? scanYouTube(formData.youtubeUrl, formData.artistName, {
+          instagram: formData.instagramHandle,
+          tiktok: formData.tiktokHandle,
+        })
       : Promise.resolve(null),
     formData.instagramHandle
       ? scanInstagram(formData.instagramHandle, formData.instagramFollowers)

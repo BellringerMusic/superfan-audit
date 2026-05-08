@@ -16,7 +16,10 @@
 import { AuditFormData, AuditResult } from '@/types/audit';
 
 const NOTIFICATION_TO = 'bellringerproductions@gmail.com';
-const FROM = 'Superfan Audit <onboarding@resend.dev>';
+// Override via RESEND_FROM env var once you verify a domain at resend.com/domains
+// (e.g. "Superfan Audit <hello@superfanaudit.com>"). The onboarding@resend.dev
+// fallback only delivers to the verified account owner, not arbitrary leads.
+const FROM = process.env.RESEND_FROM || 'Superfan Audit <onboarding@resend.dev>';
 
 interface LeadNotificationParams {
   email: string;
@@ -169,12 +172,12 @@ export async function sendFullReportNotification(params: FullReportParams): Prom
   </div>
   <div style="background:#ffffff;border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
 
-    ${section('1. What They Submitted', inputsTable)}
-    ${section('2. Audience Strength Score', scoresTable)}
+    ${section('What They Submitted', inputsTable)}
+    ${section('Audience Strength Score', scoresTable)}
 
-    ${result.brandSummary ? section('3. Brand Summary', `<p style="margin:0;font-size:14px;line-height:1.5;color:#374151;">${escapeHtml(result.brandSummary)}</p>`) : ''}
+    ${result.brandSummary ? section('Brand Summary', `<p style="margin:0;font-size:14px;line-height:1.5;color:#374151;">${escapeHtml(result.brandSummary)}</p>`) : ''}
 
-    ${section(`${result.brandSummary ? '4' : '3'}. Superfan Signals`, `
+    ${section('Superfan Signals', `
       <div style="padding:12px;background:#faf5ff;border-left:3px solid #7c3aed;border-radius:4px;">
         <div style="font-weight:600;font-size:14px;color:#5b21b6;">${escapeHtml(sa.tier)}</div>
         <div style="font-size:12px;color:#6b7280;margin-top:2px;">Engagement rate signal: ${sa.engagementRate}%</div>
@@ -184,9 +187,22 @@ export async function sendFullReportNotification(params: FullReportParams): Prom
       <ul style="margin:6px 0 0;padding-left:20px;">${indicatorsList}</ul>
     `)}
 
-    ${section(`${result.brandSummary ? '5' : '4'}. Platform-by-Platform`, platformBlocks)}
+    ${result.superfanList ? section('People Raising Their Hand', `
+      <p style="margin:0 0 8px;font-size:14px;color:#111827;font-weight:600;">${escapeHtml(result.superfanList.headline)}</p>
+      <p style="margin:0 0 12px;font-size:12px;color:#6b7280;">${escapeHtml(result.superfanList.source)}</p>
+      ${result.superfanList.people.length > 0
+        ? `<ol style="margin:0;padding-left:20px;">${result.superfanList.people.map(p => `
+            <li style="font-size:13px;color:#111827;margin:6px 0;">
+              ${p.channelUrl ? `<a href="${escapeHtml(p.channelUrl)}" style="color:#7c3aed;">${escapeHtml(p.name)}</a>` : `<strong>${escapeHtml(p.name)}</strong>`}
+              <span style="color:#6b7280;font-size:12px;"> · ${escapeHtml(p.signalSummary)}</span>
+              ${p.crossPlatform ? ' <span style="color:#7c3aed;font-size:11px;font-weight:600;">[cross-platform]</span>' : ''}
+            </li>`).join('')}</ol>`
+        : `<p style="margin:0;font-size:13px;color:#374151;font-style:italic;">${escapeHtml(result.superfanList.emptyReason || 'No commenters surfaced.')}</p>`}
+    `) : ''}
 
-    ${section(`${result.brandSummary ? '6' : '5'}. Recommended Offer`, `
+    ${section('Platform-by-Platform', platformBlocks)}
+
+    ${section('Recommended Offer', `
       <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(offer.tier)}</div>
       <div style="font-size:16px;font-weight:600;color:#111827;margin-top:2px;">${escapeHtml(offer.title)}</div>
       <p style="margin:8px 0;font-size:13px;color:#374151;">${escapeHtml(offer.description)}</p>
@@ -194,9 +210,9 @@ export async function sendFullReportNotification(params: FullReportParams): Prom
       <p style="margin:10px 0 0;font-size:13px;color:#6b7280;font-style:italic;">${escapeHtml(offer.whyThisWorks)}</p>
     `)}
 
-    ${section(`${result.brandSummary ? '7' : '6'}. Top 3 Action Items`, actions)}
+    ${section('Top 3 Action Items', actions)}
 
-    ${section(`${result.brandSummary ? '8' : '7'}. Benchmark Comparison`, benchmarkBlock)}
+    ${section('Benchmark Comparison', benchmarkBlock)}
 
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0 12px;">
     <p style="margin:0;font-size:12px;color:#9ca3af;">
@@ -218,24 +234,127 @@ export async function sendFullReportNotification(params: FullReportParams): Prom
   });
 }
 
+interface ArtistReportParams {
+  formData: AuditFormData;
+  result: AuditResult;
+  pdfBuffer: Buffer;
+}
+
+/**
+ * Email the artist their PDF report so they have it in their inbox forever,
+ * not just in a session-bound browser tab. The body includes the headline
+ * numbers + a link to view the report online (currently the same domain root).
+ */
+export async function sendReportToArtist(params: ArtistReportParams): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error('[notifications] RESEND_API_KEY not configured — skipping artist report email');
+    return false;
+  }
+
+  const { formData, result, pdfBuffer } = params;
+  const sa = result.superfanAnalysis;
+  const sl = result.superfanList;
+  const score = result.scoreBreakdown.total;
+
+  const peopleSection = sl && sl.people.length > 0
+    ? `
+      <div style="margin-top:24px;padding:20px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;">
+        <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:0.1em;">Who's raising their hand</p>
+        <p style="margin:0 0 14px;font-size:16px;font-weight:600;color:#111827;">${escapeHtml(sl.headline)}</p>
+        <ol style="margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.6;">
+          ${sl.people.slice(0, 5).map(p => `<li>${p.channelUrl ? `<a href="${escapeHtml(p.channelUrl)}" style="color:#7c3aed;text-decoration:none;font-weight:600;">${escapeHtml(p.name)}</a>` : `<strong>${escapeHtml(p.name)}</strong>`} <span style="color:#6b7280;font-size:13px;">— ${escapeHtml(p.signalSummary)}</span></li>`).join('')}
+        </ol>
+        ${sl.people.length > 5 ? `<p style="margin:10px 0 0;font-size:13px;color:#6b7280;">…plus ${sl.people.length - 5} more in the attached PDF.</p>` : ''}
+      </div>`
+    : '';
+
+  const html = `
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:580px;margin:0 auto;color:#111827;background:#ffffff;">
+  <div style="padding:32px 28px 20px;">
+    <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:0.15em;">Your Superfan Audit</p>
+    <h1 style="margin:0 0 16px;font-size:26px;line-height:1.2;color:#111827;">Hey ${escapeHtml(formData.name.split(' ')[0] || formData.name)} — your report is ready.</h1>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#374151;">
+      Here's the headline. Your full ${result.superfanList ? '9' : '8'}-page PDF is attached.
+    </p>
+
+    <div style="display:flex;gap:12px;margin:0 0 20px;">
+      <div style="flex:1;padding:16px;background:#0D0D14;border-radius:8px;text-align:center;">
+        <div style="font-size:32px;font-weight:700;color:${score >= 70 ? '#22c55e' : score >= 40 ? '#eab308' : '#f87171'};line-height:1;">${score}</div>
+        <div style="margin-top:4px;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.1em;">Audience Strength</div>
+      </div>
+      <div style="flex:1;padding:16px;background:#0D0D14;border-radius:8px;text-align:center;">
+        <div style="font-size:14px;font-weight:600;color:#ffffff;line-height:1.3;">${escapeHtml(sa.tier)}</div>
+        <div style="margin-top:4px;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.1em;">Superfan Tier</div>
+      </div>
+    </div>
+
+    ${peopleSection}
+
+    <div style="margin-top:24px;padding:16px;background:#f9fafb;border-radius:8px;">
+      <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#111827;">Your top action this month</p>
+      ${result.actionItems[0]
+        ? `<p style="margin:0;font-size:14px;color:#374151;line-height:1.5;"><strong>${escapeHtml(result.actionItems[0].title)}</strong> — ${escapeHtml(result.actionItems[0].description)}</p>`
+        : ''}
+    </div>
+
+    <p style="margin:24px 0 0;font-size:14px;color:#374151;line-height:1.6;">
+      The attached PDF has every signal we picked up, every platform metric, your full action plan, and your recommended monetization strategy. Save it. Reference it.
+    </p>
+
+    <p style="margin:20px 0 0;font-size:14px;color:#374151;line-height:1.6;">
+      The first fifty fans who'd buy anything from you start with the people raising their hand right now. Go reply to one of them.
+    </p>
+
+    <p style="margin:28px 0 0;font-size:14px;color:#374151;">
+      — Marcus<br/>
+      <a href="https://superfanaudit.com" style="color:#7c3aed;text-decoration:none;font-size:13px;">superfanaudit.com</a>
+    </p>
+  </div>
+
+  <div style="padding:16px 28px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;line-height:1.5;">
+    Built by Bellringer Productions. You're receiving this because you ran a free Superfan Audit at superfanaudit.com.
+    Want to go deeper? <a href="https://globallaunchpadmastermind.com" style="color:#7c3aed;">Global Launchpad Mastermind</a> · <a href="https://wealthandimpactai.com" style="color:#7c3aed;">Wealth &amp; Impact AI</a>
+  </div>
+</div>`.trim();
+
+  const filename = `Superfan-Audit-${formData.artistName.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+
+  return await sendEmail({
+    apiKey,
+    to: formData.email,
+    subject: `Your Superfan Audit — ${formData.artistName} (${score}/100)`,
+    html,
+    attachments: [
+      {
+        filename,
+        content: pdfBuffer.toString('base64'),
+      },
+    ],
+  });
+}
+
 interface SendEmailParams {
   apiKey: string;
   subject: string;
   html: string;
   text?: string;
   replyTo?: string;
+  to?: string;
+  attachments?: { filename: string; content: string }[];
 }
 
-async function sendEmail({ apiKey, subject, html, text, replyTo }: SendEmailParams): Promise<boolean> {
+async function sendEmail({ apiKey, subject, html, text, replyTo, to, attachments }: SendEmailParams): Promise<boolean> {
   try {
     const body: Record<string, unknown> = {
       from: FROM,
-      to: [NOTIFICATION_TO],
+      to: [to || NOTIFICATION_TO],
       subject,
       html,
     };
     if (text) body.text = text;
     if (replyTo) body.reply_to = replyTo;
+    if (attachments && attachments.length > 0) body.attachments = attachments;
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -252,7 +371,7 @@ async function sendEmail({ apiKey, subject, html, text, replyTo }: SendEmailPara
       return false;
     }
 
-    console.log(`[notifications] Sent: ${subject}`);
+    console.log(`[notifications] Sent: ${subject} → ${to || NOTIFICATION_TO}`);
     return true;
   } catch (error) {
     console.error('[notifications] Send failed:', error);
@@ -299,6 +418,20 @@ function buildPlainText(formData: AuditFormData, result: AuditResult): string {
   lines.push(`Engagement rate signal: ${result.superfanAnalysis.engagementRate}%`);
   result.superfanAnalysis.keyIndicators.forEach((k) => lines.push(`  • ${k}`));
   lines.push('');
+  if (result.superfanList) {
+    lines.push('— People Raising Their Hand —');
+    lines.push(result.superfanList.headline);
+    lines.push(result.superfanList.source);
+    if (result.superfanList.people.length > 0) {
+      result.superfanList.people.forEach((p, i) => {
+        lines.push(`  ${i + 1}. ${p.name} — ${p.signalSummary}${p.crossPlatform ? ' [cross-platform]' : ''}`);
+        if (p.channelUrl) lines.push(`     ${p.channelUrl}`);
+      });
+    } else if (result.superfanList.emptyReason) {
+      lines.push(`  ${result.superfanList.emptyReason}`);
+    }
+    lines.push('');
+  }
   lines.push('— Recommended Offer —');
   lines.push(`${result.recommendedOffer.tier}: ${result.recommendedOffer.title}`);
   lines.push(result.recommendedOffer.description);

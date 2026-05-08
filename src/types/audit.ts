@@ -36,10 +36,33 @@ export interface AuditResult {
   scoreBreakdown: ScoreBreakdown;
   platformBreakdowns: PlatformBreakdown[];
   superfanAnalysis: SuperfanAnalysis;
+  superfanList?: SuperfanList;
   recommendedOffer: RecommendedOffer;
   actionItems: ActionItem[];
   benchmarkComparison: BenchmarkComparison;
   scannedAt: string;
+}
+
+export interface SuperfanList {
+  /** Headline summary (e.g. "We found 8 people raising their hand on YouTube") */
+  headline: string;
+  /** Source description ("based on N comments across M videos") */
+  source: string;
+  /** Whether the list is empty + why (so the result page can explain) */
+  emptyReason?: string;
+  people: SuperfanPerson[];
+}
+
+export interface SuperfanPerson {
+  name: string;
+  channelUrl?: string;
+  profileImageUrl?: string;
+  /** Why we picked them (e.g. "5 comments across 3 videos · 12 likes earned") */
+  signalSummary: string;
+  /** Source platform (currently always 'YouTube' but reserved for future) */
+  source: 'YouTube';
+  /** Whether this person also appears to follow you on IG/TikTok by handle match */
+  crossPlatform?: boolean;
 }
 
 export interface ScoreBreakdown {

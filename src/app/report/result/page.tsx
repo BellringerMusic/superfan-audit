@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AuditResult } from '@/types/audit';
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function ReportResultPage() {
   const router = useRouter();
   const [result, setResult] = useState<AuditResult | null>(null);
@@ -109,6 +116,73 @@ export default function ReportResultPage() {
             </div>
           )}
         </div>
+
+        {/* The actual people raising their hand */}
+        {result.superfanList && (
+          <div className="bg-[#141420] border border-[#2D2D44] rounded-xl p-6 sm:p-8 mb-10">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-400 mb-3">
+              The people raising their hand
+            </p>
+            <h2 className="text-white text-xl font-semibold mb-2">
+              {result.superfanList.headline}
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">{result.superfanList.source}</p>
+
+            {result.superfanList.people.length > 0 ? (
+              <ul className="divide-y divide-[#2D2D44]">
+                {result.superfanList.people.map((person, i) => (
+                  <li key={i} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-300 text-sm font-bold overflow-hidden">
+                      {person.profileImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={person.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{getInitials(person.name)}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {person.channelUrl ? (
+                          <a
+                            href={person.channelUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-white font-medium text-sm hover:text-purple-300 transition-colors truncate"
+                          >
+                            {person.name}
+                          </a>
+                        ) : (
+                          <span className="text-white font-medium text-sm truncate">{person.name}</span>
+                        )}
+                        <span className="text-[10px] uppercase tracking-wider text-gray-500 bg-[#1A1A2E] px-2 py-0.5 rounded">
+                          {person.source}
+                        </span>
+                        {person.crossPlatform && (
+                          <span className="text-[10px] uppercase tracking-wider text-purple-300 bg-purple-600/20 px-2 py-0.5 rounded">
+                            cross-platform
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">{person.signalSummary}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="rounded-lg bg-[#0D0D14] border border-[#2D2D44] p-4 text-sm text-gray-400">
+                {result.superfanList.emptyReason}
+              </div>
+            )}
+
+            {result.superfanList.people.length > 0 && (
+              <p className="text-xs text-gray-500 mt-6 leading-relaxed">
+                These are the people in your audience already raising their hand.
+                Reply to one of their comments by name. Send a free download.
+                Invite them into your inner circle. The first fifty start here.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Download button */}
         {pdfBase64 && (
