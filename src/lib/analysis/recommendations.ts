@@ -1,6 +1,6 @@
 import { ScanResults } from '@/types/platforms';
 import { RecommendedOffer, ActionItem } from '@/types/audit';
-import { getIncomeIndex } from '@/lib/utils';
+import { getIncomeIndex, formatNumber } from '@/lib/utils';
 
 export function generateRecommendation(
   scanResults: ScanResults,
@@ -71,99 +71,237 @@ export function generateRecommendation(
   };
 }
 
+/**
+ * Build action items grounded in the artist's actual scan data — specific
+ * numbers, named commenters, real release titles, real platform gaps.
+ *
+ * Each candidate action computes a `score` based on leverage. We pick the top
+ * three so the output reflects this scan, not a static template.
+ */
 export function generateActionItems(
   scanResults: ScanResults,
   monthlyIncome: string,
   audienceScore: number
 ): ActionItem[] {
-  const items: ActionItem[] = [];
   const { youtube, spotify, instagram, tiktok, webPresence } = scanResults;
   const incomeIdx = getIncomeIndex(monthlyIncome);
-
-  // Priority 1: Fix the biggest gap
-  if (!youtube?.found && !spotify?.found) {
-    items.push({
-      number: 1,
-      title: 'Establish Your Primary Platform',
-      description: 'You need at least one strong platform to build superfan relationships. Start a YouTube channel or get your music on Spotify this week. YouTube is ideal for building personal connections through video content.',
-      priority: 'High',
-    });
-  } else if (youtube?.found && (youtube.engagementRate || 0) < 2) {
-    items.push({
-      number: 1,
-      title: 'Boost YouTube Engagement',
-      description: 'Your videos are getting views but not enough interaction. End every video with a specific question. Pin a comment asking fans to share their thoughts. Reply to every comment for the next 30 days.',
-      priority: 'High',
-    });
-  } else if (spotify?.found && (spotify.totalReleases || 0) < 5) {
-    items.push({
-      number: 1,
-      title: 'Build Your Release Catalog',
-      description: 'Aim for at least one release per month for the next 3 months. Singles are fine - consistency matters more than album-length projects at this stage. Each release is a new discovery opportunity.',
-      priority: 'High',
-    });
-  } else {
-    items.push({
-      number: 1,
-      title: 'Create a Fan Email List',
-      description: 'Social platforms can change their algorithm overnight. An email list is the only audience you truly own. Offer a free exclusive track or behind-the-scenes video in exchange for email sign-ups.',
-      priority: 'High',
-    });
-  }
-
-  // Priority 2: Cross-platform or monetization
   const platformCount = [youtube?.found, spotify?.found, instagram?.found, tiktok?.found].filter(Boolean).length;
+  const totalFollowers =
+    (youtube?.subscriberCount || 0) + (instagram?.followerCount || 0) + (tiktok?.followerCount || 0);
 
-  if (platformCount < 2) {
-    items.push({
-      number: 2,
-      title: 'Expand to a Second Platform',
-      description: instagram?.found
-        ? 'You\'re on Instagram but missing YouTube or Spotify. Music fans discover artists through streaming and video. Prioritize getting your music distributed to streaming platforms.'
-        : 'Cross-platform presence multiplies your reach. Start with short-form video (TikTok or Instagram Reels) to repurpose your existing content into bite-sized clips.',
+  type Candidate = ActionItem & { score: number };
+  const candidates: Candidate[] = [];
+
+  // ── 1. Reply to your named superfans ─────────────────────────────────────
+  // Highest-leverage move when we identified specific people raising their hand.
+  const repeatEngagers = (youtube?.topCommenters || []).filter(
+    (c) => c.videosCommentedOn >= 2 || c.commentCount >= 2,
+  );
+  if (repeatEngagers.length > 0) {
+    const top3 = repeatEngagers.slice(0, 3);
+    const names = top3.map((c) => c.displayName);
+    const total = repeatEngagers.length;
+    const namesPhrase = names.length === 1
+      ? names[0]
+      : names.length === 2
+      ? `${names[0]} and ${names[1]}`
+      : `${names[0]}, ${names[1]}, and ${names[2]}`;
+    const topVideo = youtube?.recentVideos?.[0]?.title;
+    const example = topVideo
+      ? `Open with: "Hey ${names[0]} — saw your comment on '${truncate(topVideo, 50)}'. What hit you about it?"`
+      : `Open with: "Hey ${names[0]} — I saw you've been showing up across multiple videos. What hit you most?"`;
+    candidates.push({
+      number: 0,
+      title: `Reply to ${namesPhrase} this week`,
+      description: `These are the ${total === 1 ? '1 person' : `${total} people`} our scan identified as repeat commenters across your recent videos — the strongest superfan signal we found. Reply to each one by name in their thread, then DM them and offer something free (a download, a private link, a behind-the-scenes clip). ${example} The first fifty superfans start with naming the ones already raising their hand.`,
       priority: 'High',
-    });
-  } else if (incomeIdx <= 1 && audienceScore >= 30) {
-    items.push({
-      number: 2,
-      title: 'Launch Your First Paid Offering',
-      description: 'Your audience is ready to support you. Start with something simple: a $5/month community, a $20 merch item, or a $50 exclusive experience. Don\'t overthink it - your first offer just needs to exist.',
-      priority: 'High',
-    });
-  } else {
-    items.push({
-      number: 2,
-      title: 'Deepen Fan Relationships',
-      description: 'Start a weekly behind-the-scenes series showing your creative process. Fans who feel connected to your journey become superfans. Share the messy, real moments - not just polished releases.',
-      priority: 'Medium',
+      score: 100,
     });
   }
 
-  // Priority 3: Growth or optimization
-  if (!webPresence?.websiteActive) {
-    items.push({
-      number: 3,
-      title: 'Build Your Own Website',
-      description: 'A simple one-page site with your bio, music links, and email signup gives you a home base you control. Use it as your link-in-bio destination. Services like Carrd or Squarespace make this easy.',
-      priority: 'Medium',
-    });
-  } else if (audienceScore >= 50) {
-    items.push({
-      number: 3,
-      title: 'Create a Referral System',
-      description: 'Your most engaged fans are your best marketers. Create a system where fans earn exclusive content or early access for referring friends. Even a simple "share this with 3 friends" CTA works.',
-      priority: 'Medium',
-    });
-  } else {
-    items.push({
-      number: 3,
-      title: 'Collaborate With Similar Artists',
-      description: 'Find 3-5 artists at a similar level in your genre and propose collaborations. Feature swaps, joint live streams, or playlist exchanges expose you to each other\'s audiences at zero cost.',
-      priority: 'Medium',
+  // ── 2. Boost a low YouTube comment rate ──────────────────────────────────
+  if (youtube?.found && youtube.avgViews && youtube.avgViews > 0) {
+    const commentRate = ((youtube.avgComments || 0) / youtube.avgViews) * 100;
+    if (commentRate < 0.5 && (youtube.avgComments || 0) < 30) {
+      candidates.push({
+        number: 0,
+        title: `Triple your YouTube comment rate (currently ${commentRate.toFixed(2)}%)`,
+        description: `Your last ${youtube.recentVideos?.length || 10} videos averaged ${formatNumber(youtube.avgViews)} views and only ${youtube.avgComments} comments — a ${commentRate.toFixed(2)}% comment rate. End the next 3 videos with one specific question (not "what do you think?" — something like "comment ONE word that describes how this hit you"). Pin a top comment yourself to seed the thread. Reply to every single comment within 24 hours for 30 days. Goal: get to 1.5%+ comment rate, where superfan signals start showing up clearly.`,
+        priority: 'High',
+        score: 85,
+      });
+    }
+  }
+
+  // ── 3. Get back on a release cadence ─────────────────────────────────────
+  if (spotify?.found && spotify.latestRelease?.releaseDate) {
+    const days = daysSince(spotify.latestRelease.releaseDate);
+    if (days >= 60) {
+      candidates.push({
+        number: 0,
+        title: `Schedule your next release — '${truncate(spotify.latestRelease.name, 40)}' dropped ${days} days ago`,
+        description: `Spotify's algorithmic boost decays sharply after day 30 and is essentially gone by day 90 — you're at day ${days}. Set a release date for the next single this week and back-plan from there: distribution lead time (DistroKid: 1 day, TuneCore: 7-21 days), pre-save campaign (3-4 weeks before drop), and 3 short-form video clips queued for release week. Releasing every 4-6 weeks keeps you in the algorithm's "active artist" tier.`,
+        priority: 'High',
+        score: 80,
+      });
+    }
+  }
+
+  // ── 4. Build catalog depth on Spotify ────────────────────────────────────
+  if (spotify?.found && (spotify.totalReleases || 0) < 10) {
+    const have = spotify.totalReleases || 0;
+    const need = 10 - have;
+    candidates.push({
+      number: 0,
+      title: `Build your Spotify catalog from ${have} to 10 releases`,
+      description: `You currently have ${have} release${have === 1 ? '' : 's'} on Spotify (${spotify.albumCount || 0} album${spotify.albumCount === 1 ? '' : 's'}, ${spotify.singleCount || 0} single${spotify.singleCount === 1 ? '' : 's'}). The Spotify algorithm starts treating an artist as "established" around 10 releases — that's when Discover Weekly and Release Radar start surfacing you to non-followers. Schedule ${need} singles over the next ${need * 4} weeks (one every ~4 weeks). Don't wait to write album-length material; consistency outperforms scope at this stage.`,
+      priority: 'High',
+      score: 70,
     });
   }
 
-  return items;
+  // ── 5. Establish first platform ──────────────────────────────────────────
+  if (!youtube?.found && !spotify?.found) {
+    const ig = instagram?.found ? `your Instagram${instagram.followerCount ? ` (${formatNumber(instagram.followerCount)} followers)` : ''}` : null;
+    const tt = tiktok?.found ? `your TikTok${tiktok.followerCount ? ` (${formatNumber(tiktok.followerCount)} followers)` : ''}` : null;
+    const social = [ig, tt].filter(Boolean).join(' and ');
+    candidates.push({
+      number: 0,
+      title: 'Pick a music hub — Spotify or YouTube — this week',
+      description: `You're showing up on ${social || 'social media'} but not on a music platform where superfans live. Spotify is the lower-friction path: distribute via DistroKid ($23/yr) and you can have a song live in 24-48 hours. YouTube takes longer to build but compounds harder for personal connection. Pick one, put your first piece up by Friday, and link to it from every social bio.`,
+      priority: 'High',
+      score: 95,
+    });
+  }
+
+  // ── 6. Cross-platform expansion (specific to what they're missing) ───────
+  if (platformCount >= 1 && platformCount < 3) {
+    const missing: string[] = [];
+    if (!youtube?.found) missing.push('YouTube');
+    if (!spotify?.found) missing.push('Spotify');
+    if (!instagram?.found) missing.push('Instagram');
+    if (!tiktok?.found) missing.push('TikTok');
+    const have: string[] = [];
+    if (youtube?.found) have.push('YouTube');
+    if (spotify?.found) have.push('Spotify');
+    if (instagram?.found) have.push('Instagram');
+    if (tiktok?.found) have.push('TikTok');
+
+    if (missing.length > 0) {
+      const target = missing[0];
+      const reasoning =
+        target === 'Spotify'
+          ? 'Streaming is where music fans listen passively while doing other things — your YouTube viewers want a way to play your music in the background. Distribute via DistroKid and reuse your YouTube audio.'
+          : target === 'YouTube'
+          ? 'YouTube is where superfan relationships deepen — fans who watch a 5-minute video feel they know you in a way short-form content can\'t replicate. Start with one video per week: behind-the-scenes, a stripped-down performance, or a story about a song.'
+          : target === 'TikTok'
+          ? 'TikTok is your discovery engine. Repurpose 15-30 second clips from your existing content. The algorithm is the most generous of any platform for new accounts — even one viral clip can shift your trajectory.'
+          : 'Instagram is where fans check up on you between releases. Stories build the most intimacy. Repurpose existing content — you don\'t need new shoots.';
+      candidates.push({
+        number: 0,
+        title: `Add ${target} to your stack (you're on ${have.join(' + ')})`,
+        description: `${reasoning} Set up the account, post your first 3 pieces of content this week, and pin/link the new platform from every other bio.`,
+        priority: 'High',
+        score: 75,
+      });
+    }
+  }
+
+  // ── 7. Launch first paid offer ───────────────────────────────────────────
+  if (incomeIdx <= 1 && totalFollowers >= 1000 && audienceScore >= 30) {
+    const conversionEstimate = Math.round(totalFollowers * 0.005);
+    candidates.push({
+      number: 0,
+      title: 'Launch your first $5–$15/month paid tier',
+      description: `You have ~${formatNumber(totalFollowers)} followers across platforms with a ${audienceScore}/100 audience strength score — enough engaged audience to support a small recurring offer. A 0.5% conversion at $10/mo would be ~${conversionEstimate} members and $${conversionEstimate * 10}/mo in recurring revenue. Don't overthink the deliverable: monthly Q&A live, demos before they hit Spotify, a private Discord. Use Patreon, Buy Me a Coffee, or Ko-fi — set up takes under an hour. Announce it to the named superfans first (Action 1).`,
+      priority: 'High',
+      score: 65,
+    });
+  }
+
+  // ── 8. Build email list ──────────────────────────────────────────────────
+  if (!webPresence?.websiteActive && totalFollowers > 500) {
+    candidates.push({
+      number: 0,
+      title: 'Put up a one-page email-capture site this week',
+      description: `You have ~${formatNumber(totalFollowers)} followers but no website — meaning every fan you have lives on a platform that can change its rules tomorrow. Build a one-page site (Carrd: $19/yr, Squarespace, or a Linktree+ContactForm combo) with: artist photo, 2-line bio, music links, and an email signup that gives away one unreleased or stripped-down track. Link it from every bio. Email is the only audience you actually own.`,
+      priority: 'High',
+      score: 60,
+    });
+  }
+
+  // ── 9. Convert TikTok / IG audience to streaming ─────────────────────────
+  if (
+    (tiktok?.found || instagram?.found) &&
+    !spotify?.found
+  ) {
+    const ttFollowers = tiktok?.followerCount || 0;
+    const igFollowers = instagram?.followerCount || 0;
+    const biggest = ttFollowers > igFollowers ? 'TikTok' : 'Instagram';
+    const biggestCount = Math.max(ttFollowers, igFollowers);
+    candidates.push({
+      number: 0,
+      title: `Distribute your music — ${biggest} reach is wasted without Spotify`,
+      description: `${biggestCount > 0 ? `You have ${formatNumber(biggestCount)} followers on ${biggest}` : `You're active on ${biggest}`}, but you're not on Spotify — meaning anyone who hears a clip and wants to listen full has nowhere to go. Distribute via DistroKid this week. Then update your ${biggest} bio with the Spotify link and pin a "full song on Spotify" comment to your top videos.`,
+      priority: 'High',
+      score: 90,
+    });
+  }
+
+  // ── 10. Press / authority play ───────────────────────────────────────────
+  if (audienceScore >= 50 && !(webPresence?.pressMentions && webPresence.pressMentions.length > 0)) {
+    candidates.push({
+      number: 0,
+      title: 'Pitch 5 niche music blogs in your genre this month',
+      description: `Your audience strength is ${audienceScore}/100 — strong enough that press placements will compound. Skip the major outlets. Find 5 niche blogs that cover your specific subgenre (search "[genre] new artist coverage 2026"), pitch a one-paragraph email with your Spotify link and one specific hook from your latest track. Even one placement creates a press mention that lifts your benchmark and gives you something to repost.`,
+      priority: 'Medium',
+      score: 50,
+    });
+  }
+
+  // ── 11. Refer-a-friend mechanic for engaged audiences ────────────────────
+  if (audienceScore >= 50 && repeatEngagers.length === 0) {
+    candidates.push({
+      number: 0,
+      title: 'Run a "share with one friend" campaign on your next release',
+      description: `Your audience is ${audienceScore}/100 — engaged but not yet activated as evangelists. On your next release, post a short video saying: "If you like this, send it to ONE specific friend who'd vibe with it. DM me their handle and I'll send a free [unreleased track / lyrics PDF / demo]." Track the responses. The friends who get tagged are your future superfans — they were vetted by people who already love you.`,
+      priority: 'Medium',
+      score: 40,
+    });
+  }
+
+  // ── 12. Deepen the fan relationship (general fallback) ───────────────────
+  candidates.push({
+    number: 0,
+    title: 'Start a weekly behind-the-scenes post or email',
+    description: `Pick one channel — Instagram Stories, an email list, or YouTube community posts. Every week, post one piece showing the messy, in-progress side of your work: a voice-memo demo, a lyric you almost cut, a photo of your gear. Fans who feel like insiders convert at 3-5x the rate of fans who only see polished output. Block 30 minutes every Sunday to capture and post.`,
+    priority: 'Medium',
+    score: 20,
+  });
+
+  // Pick top 3 by score, renumber, and ensure variety (no two near-duplicates).
+  const top = candidates
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((c, i): ActionItem => ({
+      number: i + 1,
+      title: c.title,
+      description: c.description,
+      priority: c.priority,
+    }));
+
+  return top;
+}
+
+function daysSince(dateString: string): number {
+  const then = new Date(dateString).getTime();
+  if (Number.isNaN(then)) return 0;
+  return Math.max(0, Math.floor((Date.now() - then) / 86_400_000));
+}
+
+function truncate(s: string, n: number): string {
+  if (s.length <= n) return s;
+  return s.slice(0, n - 1).trim() + '…';
 }
 
 function estimateTotalFollowers(scanResults: ScanResults): number {
