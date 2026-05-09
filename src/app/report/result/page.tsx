@@ -403,35 +403,40 @@ function PrimaryCta({ score }: { score: number }) {
     );
   }
 
-  // Cold tier — under 40. Don't try to sell. Educate and retain.
+  // Cold tier — under 40. The branding fundamentals are what's actually
+  // missing here, so route to the Branding Bible (offers from free to $997)
+  // rather than a high-ticket mastermind they're not ready for.
   return (
-    <div className="bg-[#141420] border border-[#2D2D44] rounded-xl p-6 sm:p-8 mb-12 text-center">
-      <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-400 mb-3">
-        Build first. Come back stronger.
+    <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/20 border border-purple-500/30 rounded-xl p-6 sm:p-8 mb-12 text-center">
+      <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-300 mb-3">
+        Start with the brand foundation
       </p>
-      <h2 className="text-white text-2xl font-bold mb-3">
-        You scored a {score}. The action items below are your roadmap.
+      <h2 className="text-white text-2xl sm:text-3xl font-bold mb-3">
+        You scored a {score}. Build the foundation first.
       </h2>
-      <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xl mx-auto">
-        Don&apos;t skip ahead to monetization. The artists who build a real
-        superfan base are the ones who execute on fundamentals first. Your
-        top 3 action items below are calibrated to your exact data. Run
-        them for 60–90 days, then re-run this audit and watch the score move.
+      <p className="text-gray-300 text-sm sm:text-base leading-relaxed mb-6 max-w-xl mx-auto">
+        A {score}/100 means the brand fundamentals aren&apos;t yet in place to
+        attract superfans at scale. Don&apos;t skip ahead to monetization —
+        the artists who build a real superfan base nail the brand first.
+        The Bellringer Branding Bible is exactly that: the playbook that
+        turns a creator into a brand people commit to.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <a
-          href="#action-items"
-          className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-6 py-3 rounded-lg text-sm transition-colors"
+          href="https://bellringerbrandingbible.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-lg text-base transition-all"
         >
-          See my action items
-          <span aria-hidden="true">↓</span>
+          Get the Branding Bible
+          <span aria-hidden="true">→</span>
         </a>
-        <Link
-          href="/"
-          className="text-gray-400 hover:text-purple-300 text-sm font-medium transition-colors px-4 py-3"
+        <a
+          href="#action-items"
+          className="text-gray-300 hover:text-purple-300 text-sm font-medium transition-colors px-4 py-3"
         >
-          Share with another artist →
-        </Link>
+          See my action items ↓
+        </a>
       </div>
     </div>
   );
