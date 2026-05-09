@@ -7,16 +7,87 @@ import { useRouter } from 'next/navigation';
 import { step1Schema, step2Schema, step3Schema, GENRES, INCOME_TIERS, YEARS_ACTIVE } from '@/lib/validators';
 import type { Step1Data, Step2Data, Step3Data } from '@/lib/validators';
 
+const FORM_DRAFT_KEY = 'superfanAudit:draftV1';
+const FORM_DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h
+
+type FormDraft = {
+  step: number;
+  formData: Partial<Step1Data & Step2Data & Step3Data>;
+  step1?: Partial<Step1Data>;
+  step2?: Partial<Step2Data>;
+  step3?: Partial<Step3Data>;
+  savedAt: number;
+};
+
+function readDraft(): FormDraft | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(FORM_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as FormDraft;
+    if (!parsed.savedAt || Date.now() - parsed.savedAt > FORM_DRAFT_MAX_AGE_MS) {
+      window.localStorage.removeItem(FORM_DRAFT_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(draft: Omit<FormDraft, 'savedAt'>) {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload: FormDraft = { ...draft, savedAt: Date.now() };
+    window.localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(payload));
+  } catch {
+    // localStorage might be full / disabled — silently no-op.
+  }
+}
+
+function clearDraft() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(FORM_DRAFT_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export default function AuditPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<Partial<Step1Data & Step2Data & Step3Data>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [submittedFormData, setSubmittedFormData] = useState<Partial<Step1Data & Step2Data & Step3Data> | null>(null);
 
   const form1 = useForm<Step1Data>({ resolver: zodResolver(step1Schema), defaultValues: { name: '', email: '', consent: false as unknown as true } });
   const form2 = useForm<Step2Data>({ resolver: zodResolver(step2Schema), defaultValues: { artistName: '', genre: '', monthlyIncome: '', yearsActive: '' } });
   const form3 = useForm<Step3Data>({ resolver: zodResolver(step3Schema), defaultValues: { spotifyUrl: '', youtubeUrl: '', instagramHandle: '', instagramFollowers: '', tiktokHandle: '', websiteUrl: '' } });
+
+  // Restore draft on mount so an accidental refresh doesn't blow away progress.
+  useEffect(() => {
+    const draft = readDraft();
+    if (!draft) return;
+    if (draft.formData) setFormData(draft.formData);
+    if (draft.step1) form1.reset({ ...form1.getValues(), ...draft.step1 });
+    if (draft.step2) form2.reset({ ...form2.getValues(), ...draft.step2 });
+    if (draft.step3) form3.reset({ ...form3.getValues(), ...draft.step3 });
+    if (draft.step >= 1 && draft.step <= 3) setStep(draft.step);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save partial progress whenever the user finishes a step or types something
+  // worth keeping. We persist field values and the current step.
+  useEffect(() => {
+    const subs = [
+      form1.watch((values) => writeDraft({ step, formData, step1: values as Partial<Step1Data> })),
+      form2.watch((values) => writeDraft({ step, formData, step2: values as Partial<Step2Data> })),
+      form3.watch((values) => writeDraft({ step, formData, step3: values as Partial<Step3Data> })),
+    ];
+    return () => subs.forEach((s) => s.unsubscribe());
+  }, [step, formData, form1, form2, form3]);
 
   const handleStep1 = form1.handleSubmit((data) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -32,6 +103,7 @@ export default function AuditPage() {
     setIsSubmitting(true);
     setError('');
     const fullData = { ...formData, ...data };
+    setSubmittedFormData(fullData);
 
     try {
       const res = await fetch('/api/audit/start', {
@@ -53,6 +125,8 @@ export default function AuditPage() {
         if (responseData.pdfBase64) {
           sessionStorage.setItem('auditPdfBase64', responseData.pdfBase64);
         }
+        // Audit is in the bag — clear the in-progress draft.
+        clearDraft();
         router.push('/report/result');
       } else {
         throw new Error('Audit did not complete successfully');
@@ -60,6 +134,7 @@ export default function AuditPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setIsSubmitting(false);
+      setSubmittedFormData(null);
     }
   });
 
@@ -70,7 +145,7 @@ export default function AuditPage() {
 
   // Show processing animation while waiting for API
   if (isSubmitting) {
-    return <ProcessingAnimation />;
+    return <ProcessingAnimation submittedData={submittedFormData} />;
   }
 
   return (
@@ -237,75 +312,76 @@ export default function AuditPage() {
   );
 }
 
-/* Inline processing animation shown while the API is working */
-function ProcessingAnimation() {
-  const STEPS = [
-    'Received your information',
-    'Scanning Spotify...',
-    'Scanning YouTube...',
-    'Scanning social media...',
-    'Analyzing your audience...',
-    'Generating your report...',
-  ];
+/**
+ * Honest loading state — only shows the platforms that were actually
+ * submitted, paces at the API's real ~3-5s response time, and stays on
+ * the final "wrapping up" step until the response actually returns.
+ */
+function ProcessingAnimation({
+  submittedData,
+}: {
+  submittedData: Partial<Step1Data & Step2Data & Step3Data> | null;
+}) {
+  // Build steps based on what the user actually provided.
+  const steps: string[] = ['Received your information'];
+  const d = submittedData || {};
+  if (d.spotifyUrl) steps.push('Scanning Spotify…');
+  if (d.youtubeUrl) steps.push('Scanning YouTube channel + comments…');
+  if (d.instagramHandle) steps.push('Checking Instagram…');
+  if (d.tiktokHandle) steps.push('Checking TikTok…');
+  if (d.websiteUrl) steps.push('Scanning your website + press mentions…');
+  steps.push('Identifying repeat engagers…');
+  steps.push('Building your report…');
 
   const [activeStepIdx, setActiveStepIdx] = useState(0);
-  const [progress, setProgress] = useState(5);
 
-  // Simulate progress ticking up while we wait for the API
+  // Advance through the steps at a pace tuned to the real ~3-5s API.
+  // Each step takes ~600ms; the final step holds open until the parent
+  // unmounts us by routing to the report.
   useEffect(() => {
-    let idx = 0;
-    const stepInterval = setInterval(() => {
-      idx = Math.min(idx + 1, STEPS.length - 1);
-      setActiveStepIdx(idx);
-      // Simulate progress: 5 → ~85 over ~30s, but never hit 100
-      setProgress(prev => Math.min(prev + Math.random() * 12 + 3, 88));
-    }, 4000);
+    const last = steps.length - 1;
+    const id = setInterval(() => {
+      setActiveStepIdx((prev) => Math.min(prev + 1, last));
+    }, 600);
+    return () => clearInterval(id);
+  }, [steps.length]);
 
-    // Also tick progress more smoothly
-    const progressTick = setInterval(() => {
-      setProgress(prev => Math.min(prev + Math.random() * 2 + 0.5, 90));
-    }, 1500);
-
-    return () => {
-      clearInterval(stepInterval);
-      clearInterval(progressTick);
-    };
-  }, []);
+  // The progress bar tracks step completion, not wall-clock — honest by design.
+  const completionPct = Math.min(95, Math.round(((activeStepIdx + 1) / steps.length) * 100));
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h1 className="text-2xl font-bold text-white mb-2">Building Your Report</h1>
-          <p className="text-gray-400">This usually takes about 15-30 seconds.</p>
+          <p className="text-gray-400">Looking for the people in your audience already raising their hand.</p>
         </div>
 
         {/* Progress bar */}
-        <div className="mb-10">
+        <div className="mb-8">
           <div className="h-2 bg-[#1A1A2E] rounded-full overflow-hidden">
             <div
-              className="h-2 bg-gradient-to-r from-purple-600 to-pink-500 rounded-full transition-all duration-1000 ease-out"
-              style={{ width: `${Math.round(progress)}%` }}
+              className="h-2 bg-gradient-to-r from-purple-600 to-pink-500 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${completionPct}%` }}
             />
           </div>
-          <p className="text-sm text-gray-500 mt-2 text-center">{Math.round(progress)}%</p>
         </div>
 
         {/* Steps */}
-        <div className="space-y-4">
-          {STEPS.map((stepText, i) => {
+        <div className="space-y-3">
+          {steps.map((stepText, i) => {
             const isComplete = i < activeStepIdx;
             const isActive = i === activeStepIdx;
 
             return (
               <div key={i} className="flex items-center gap-4">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
                   isComplete ? 'bg-green-500/20 text-green-400' :
                   isActive ? 'bg-purple-600/20 text-purple-400' :
                   'bg-[#1A1A2E] text-gray-600'
                 }`}>
                   {isComplete ? '✓' : isActive ? (
-                    <span className="w-3 h-3 rounded-full bg-purple-400 animate-pulse" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse" />
                   ) : (
                     <span className="w-2 h-2 rounded-full bg-gray-600" />
                   )}

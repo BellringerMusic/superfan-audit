@@ -184,6 +184,9 @@ export default function ReportResultPage() {
           </div>
         )}
 
+        {/* Score-tiered hero CTA — surfaces the right next-step for THIS lead */}
+        <PrimaryCta score={result.audienceStrengthScore} />
+
         {/* Download button */}
         {pdfBase64 && (
           <div className="text-center mb-12">
@@ -194,7 +197,7 @@ export default function ReportResultPage() {
               Download Full PDF Report
               <span aria-hidden="true">&darr;</span>
             </button>
-            <p className="text-sm text-gray-500 mt-2">8-page personalized PDF</p>
+            <p className="text-sm text-gray-500 mt-2">9-page personalized PDF</p>
           </div>
         )}
 
@@ -263,7 +266,7 @@ export default function ReportResultPage() {
         </div>
 
         {/* Action items */}
-        <div className="mb-8">
+        <div className="mb-8" id="action-items">
           <h2 className="text-xl font-bold text-white mb-4">Your Top 3 Action Items</h2>
           <div className="space-y-4">
             {result.actionItems.map((item) => (
@@ -295,10 +298,11 @@ export default function ReportResultPage() {
           </div>
         )}
 
-        {/* Next Steps */}
+        {/* Other ways to go deeper (secondary — primary CTA is up top) */}
         <div className="py-12 border-t border-[#2D2D44]">
-          <h3 className="text-center text-lg font-bold text-white mb-2">Ready to Take Action?</h3>
-          <p className="text-center text-gray-400 text-sm mb-8">This report is just the beginning. Take the next step in your music career.</p>
+          <p className="text-center text-xs font-semibold tracking-[0.2em] uppercase text-gray-500 mb-6">
+            Other ways to go deeper
+          </p>
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-8">
             <a
               href="https://globallaunchpadmastermind.com"
@@ -307,7 +311,7 @@ export default function ReportResultPage() {
               className="bg-[#141420] border border-[#2D2D44] hover:border-purple-500/50 rounded-lg p-6 text-center transition-colors group"
             >
               <p className="text-white font-semibold mb-2 group-hover:text-purple-400 transition-colors">Global Launchpad Mastermind</p>
-              <p className="text-gray-500 text-sm">Join a mastermind of independent artists scaling their careers with proven strategies and direct mentorship.</p>
+              <p className="text-gray-500 text-sm">Mastermind of independent artists scaling their careers with proven strategies and direct mentorship.</p>
             </a>
             <a
               href="https://wealthandimpactai.com"
@@ -316,7 +320,7 @@ export default function ReportResultPage() {
               className="bg-[#141420] border border-[#2D2D44] hover:border-purple-500/50 rounded-lg p-6 text-center transition-colors group"
             >
               <p className="text-white font-semibold mb-2 group-hover:text-purple-400 transition-colors">Wealth &amp; Impact AI Accelerator</p>
-              <p className="text-gray-500 text-sm">Leverage AI to build wealth, create impact, and accelerate your music business to new heights.</p>
+              <p className="text-gray-500 text-sm">Leverage AI to build wealth, create impact, and accelerate your music business.</p>
             </a>
           </div>
           <div className="text-center">
@@ -331,5 +335,104 @@ export default function ReportResultPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+/**
+ * Score-tiered hero CTA. The lead's audience strength determines which next
+ * step they see right under the named-superfans section — hot leads get
+ * routed to the high-ticket mastermind, mid leads to the recurring
+ * accelerator, cold leads get a "build first, come back" framing instead
+ * of a premature upsell.
+ */
+function PrimaryCta({ score }: { score: number }) {
+  if (score >= 70) {
+    return (
+      <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-6 sm:p-8 mb-12 text-center">
+        <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-200 mb-3">
+          Your audience is ready for the next level
+        </p>
+        <h2 className="text-white text-2xl sm:text-3xl font-bold mb-3">
+          You scored a {score}. Let&apos;s get you a mastermind.
+        </h2>
+        <p className="text-purple-100 text-sm sm:text-base leading-relaxed mb-6 max-w-xl mx-auto">
+          A {score}/100 score means you have real signal — fans engaging across
+          multiple platforms, repeat commenters, the building blocks of a
+          full-time music career. The Global Launchpad Mastermind is for
+          artists at exactly this stage who want to convert that signal into
+          revenue with proven strategies and direct mentorship.
+        </p>
+        <a
+          href="https://globallaunchpadmastermind.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-white text-purple-700 hover:bg-gray-100 font-semibold px-8 py-4 rounded-lg text-base transition-all"
+        >
+          Apply to Global Launchpad Mastermind
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    );
+  }
+
+  if (score >= 40) {
+    return (
+      <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/30 border border-purple-500/40 rounded-xl p-6 sm:p-8 mb-12 text-center">
+        <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-300 mb-3">
+          You have signal worth scaling
+        </p>
+        <h2 className="text-white text-2xl sm:text-3xl font-bold mb-3">
+          You scored a {score}. Time to leverage AI to grow.
+        </h2>
+        <p className="text-gray-300 text-sm sm:text-base leading-relaxed mb-6 max-w-xl mx-auto">
+          You&apos;ve got the foundation. The fastest way to compound from here
+          is to use AI to multiply your output and reach. That&apos;s exactly
+          what the Wealth &amp; Impact AI Accelerator is built for — artists
+          and creators turning early traction into a real business.
+        </p>
+        <a
+          href="https://wealthandimpactai.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-lg text-base transition-all"
+        >
+          See the Wealth &amp; Impact AI Accelerator
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    );
+  }
+
+  // Cold tier — under 40. Don't try to sell. Educate and retain.
+  return (
+    <div className="bg-[#141420] border border-[#2D2D44] rounded-xl p-6 sm:p-8 mb-12 text-center">
+      <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-400 mb-3">
+        Build first. Come back stronger.
+      </p>
+      <h2 className="text-white text-2xl font-bold mb-3">
+        You scored a {score}. The action items below are your roadmap.
+      </h2>
+      <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xl mx-auto">
+        Don&apos;t skip ahead to monetization. The artists who build a real
+        superfan base are the ones who execute on fundamentals first. Your
+        top 3 action items below are calibrated to your exact data. Run
+        them for 60–90 days, then re-run this audit and watch the score move.
+      </p>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a
+          href="#action-items"
+          className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-6 py-3 rounded-lg text-sm transition-colors"
+        >
+          See my action items
+          <span aria-hidden="true">↓</span>
+        </a>
+        <Link
+          href="/"
+          className="text-gray-400 hover:text-purple-300 text-sm font-medium transition-colors px-4 py-3"
+        >
+          Share with another artist →
+        </Link>
+      </div>
+    </div>
   );
 }
