@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeUrl, extractSocialHandle } from './utils';
 
 export const GENRES = [
   'Pop', 'Rock', 'Hip-Hop', 'R&B', 'Electronic', 'Country',
@@ -24,9 +25,26 @@ export const YEARS_ACTIVE = [
 ] as const;
 
 const spotifyUrlPattern = /^https?:\/\/(open\.)?spotify\.com\/(artist|intl-[a-z]+\/artist)\/[a-zA-Z0-9]+/;
-const youtubeUrlPattern = /^https?:\/\/(www\.)?(youtube\.com\/(channel\/|@|c\/)|youtu\.be\/)/;
-const instagramHandlePattern = /^@?[a-zA-Z0-9._]{1,30}$/;
-const tiktokHandlePattern = /^@?[a-zA-Z0-9._]{1,24}$/;
+const youtubeUrlPattern = /^https?:\/\/((www|m|music)\.)?(youtube\.com\/(channel\/|@|c\/|user\/)|youtu\.be\/)/;
+const instagramHandlePattern = /^[a-zA-Z0-9._]{1,30}$/;
+const tiktokHandlePattern = /^[a-zA-Z0-9._]{1,24}$/;
+const websiteUrlPattern = /^https?:\/\/[^\s.]+\.[^\s]+$/;
+
+/**
+ * Build a string schema that normalizes the user's input first, then
+ * runs the pattern check on the normalized value. Empty stays empty.
+ */
+function lenientUrl(pattern: RegExp, message: string) {
+  return z.string()
+    .transform(normalizeUrl)
+    .refine(s => s === '' || pattern.test(s), message);
+}
+
+function lenientHandle(platform: 'instagram' | 'tiktok', pattern: RegExp, message: string) {
+  return z.string()
+    .transform(s => extractSocialHandle(s, platform))
+    .refine(s => s === '' || pattern.test(s), message);
+}
 
 export const step1Schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(50),
@@ -42,12 +60,12 @@ export const step2Schema = z.object({
 });
 
 export const step3Schema = z.object({
-  spotifyUrl: z.string().regex(spotifyUrlPattern, 'Please enter a valid Spotify artist URL').or(z.literal('')),
-  youtubeUrl: z.string().regex(youtubeUrlPattern, 'Please enter a valid YouTube channel URL').or(z.literal('')),
-  instagramHandle: z.string().regex(instagramHandlePattern, 'Please enter a valid Instagram handle').or(z.literal('')),
+  spotifyUrl: lenientUrl(spotifyUrlPattern, 'Please enter a valid Spotify artist URL'),
+  youtubeUrl: lenientUrl(youtubeUrlPattern, 'Please enter a valid YouTube channel URL'),
+  instagramHandle: lenientHandle('instagram', instagramHandlePattern, 'Please enter a valid Instagram handle'),
   instagramFollowers: z.string().regex(/^[0-9,]*$/, 'Please enter a number').or(z.literal('')),
-  tiktokHandle: z.string().regex(tiktokHandlePattern, 'Please enter a valid TikTok handle').or(z.literal('')),
-  websiteUrl: z.string().url('Please enter a valid URL').or(z.literal('')),
+  tiktokHandle: lenientHandle('tiktok', tiktokHandlePattern, 'Please enter a valid TikTok handle'),
+  websiteUrl: lenientUrl(websiteUrlPattern, 'Please enter a valid website URL'),
 }).refine(
   (data) => {
     return !!(data.spotifyUrl || data.youtubeUrl || data.instagramHandle || data.tiktokHandle || data.websiteUrl);

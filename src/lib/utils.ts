@@ -34,3 +34,57 @@ export function getIncomeIndex(income: string): number {
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/**
+ * Normalize anything a user might paste as a URL into a clean https:// form.
+ * Handles: marcus.com → https://marcus.com
+ *          www.marcus.com → https://www.marcus.com
+ *          http://marcus.com → http://marcus.com (preserved)
+ *          https://marcus.com/ → https://marcus.com (trailing slash stripped)
+ *          marcus.com/about → https://marcus.com/about
+ * Whitespace is trimmed. Empty strings stay empty (so the field can stay optional).
+ */
+export function normalizeUrl(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  // Drop trailing slashes from the URL itself, but only on the path (not the protocol).
+  return withProtocol.replace(/\/+$/, '');
+}
+
+/**
+ * Pull a social handle out of whatever the user pasted: a bare handle ("@me"
+ * or "me"), a profile URL ("instagram.com/me"), a full URL with extras
+ * ("https://www.instagram.com/me/?hl=en"), or a TikTok URL with a video path
+ * ("https://www.tiktok.com/@me/video/123"). Returns the bare handle without
+ * the leading @, ready to feed back into the existing handle pattern.
+ */
+export function extractSocialHandle(
+  input: string,
+  platform: 'instagram' | 'tiktok',
+): string {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+
+  // If it doesn't look like a URL or domain, treat as a bare handle.
+  const looksLikeUrl = /\.(com|net|org)/i.test(trimmed) || /^https?:\/\//i.test(trimmed);
+  if (!looksLikeUrl) {
+    return trimmed.replace(/^@/, '').replace(/\/+$/, '');
+  }
+
+  const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const u = new URL(candidate);
+    const host = u.hostname.toLowerCase();
+    const expectedHost = platform === 'instagram' ? 'instagram.com' : 'tiktok.com';
+    if (!host.endsWith(expectedHost)) {
+      // Not actually a URL for this platform — fall back to bare handle parsing.
+      return trimmed.replace(/^@/, '').replace(/\/+$/, '');
+    }
+    const segments = u.pathname.split('/').filter(Boolean);
+    const first = segments[0] || '';
+    return first.replace(/^@/, '');
+  } catch {
+    return trimmed.replace(/^@/, '').replace(/\/+$/, '');
+  }
+}

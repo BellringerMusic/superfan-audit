@@ -177,17 +177,20 @@ export default function AuditPage() {
             </div>
             <div>
               <label className={labelClass}>♫ Spotify Artist URL</label>
-              <input {...form3.register('spotifyUrl')} className={inputClass} placeholder="https://open.spotify.com/artist/..." />
+              <input {...form3.register('spotifyUrl')} className={inputClass} placeholder="open.spotify.com/artist/..." />
+              <p className="text-xs text-gray-500 mt-1">Paste the link however it looks — with or without https://</p>
               {form3.formState.errors.spotifyUrl && <p className={errorClass}>{form3.formState.errors.spotifyUrl.message}</p>}
             </div>
             <div>
               <label className={labelClass}>▶ YouTube Channel URL</label>
-              <input {...form3.register('youtubeUrl')} className={inputClass} placeholder="https://youtube.com/@yourchannel" />
+              <input {...form3.register('youtubeUrl')} className={inputClass} placeholder="youtube.com/@yourchannel" />
+              <p className="text-xs text-gray-500 mt-1">Channel URL — handle (@), /channel/, or /c/ formats all work.</p>
               {form3.formState.errors.youtubeUrl && <p className={errorClass}>{form3.formState.errors.youtubeUrl.message}</p>}
             </div>
             <div>
               <label className={labelClass}>📷 Instagram Handle</label>
-              <input {...form3.register('instagramHandle')} className={inputClass} placeholder="@yourhandle" />
+              <input {...form3.register('instagramHandle')} className={inputClass} placeholder="@yourhandle or instagram.com/yourhandle" />
+              <p className="text-xs text-gray-500 mt-1">Just your username — or paste the whole profile URL, we&apos;ll figure it out.</p>
               {form3.formState.errors.instagramHandle && <p className={errorClass}>{form3.formState.errors.instagramHandle.message}</p>}
               {form3.watch('instagramHandle') && (
                 <div className="mt-3">
@@ -200,12 +203,14 @@ export default function AuditPage() {
             </div>
             <div>
               <label className={labelClass}>♪ TikTok Handle</label>
-              <input {...form3.register('tiktokHandle')} className={inputClass} placeholder="@yourhandle" />
+              <input {...form3.register('tiktokHandle')} className={inputClass} placeholder="@yourhandle or tiktok.com/@yourhandle" />
+              <p className="text-xs text-gray-500 mt-1">Just your username — or paste the profile URL.</p>
               {form3.formState.errors.tiktokHandle && <p className={errorClass}>{form3.formState.errors.tiktokHandle.message}</p>}
             </div>
             <div>
               <label className={labelClass}>🌐 Website URL</label>
-              <input {...form3.register('websiteUrl')} className={inputClass} placeholder="https://yourwebsite.com" />
+              <input {...form3.register('websiteUrl')} className={inputClass} placeholder="yourwebsite.com" />
+              <p className="text-xs text-gray-500 mt-1">marcus.com, www.marcus.com, https://marcus.com — all good.</p>
               {form3.formState.errors.websiteUrl && <p className={errorClass}>{form3.formState.errors.websiteUrl.message}</p>}
             </div>
             {error && (
