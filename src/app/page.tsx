@@ -7,12 +7,12 @@ const steps = [
 ];
 
 const features = [
-  { title: 'The Superfan Signal', desc: 'A read on whether your audience is passively listening or actively raising their hand — the only metric that predicts who will actually buy.' },
-  { title: 'Audience Strength Score', desc: 'A 0–100 score that goes beyond reach — combining engagement quality, cross-platform overlap, and catalog depth.' },
-  { title: 'Platform-by-Platform Breakdown', desc: 'See exactly where you have signal, where you have noise, and what to do about each platform.' },
-  { title: 'Buyer-vs-Streamer Read', desc: 'Surface who is engaging at a level that says "I would buy something from you" — not just "I let your song play."' },
-  { title: 'Personalized Offer Strategy', desc: 'Based on your audience size, engagement, and current income — get a specific monetization recommendation that actually fits where you are.' },
-  { title: 'Top 3 Action Items', desc: 'Three specific moves you can make this month to convert raising-hand fans into paying superfans.' },
+  { title: 'The exact people raising their hand', desc: 'Their names. Their handles. Links to their channels. Pulled from real comment data — not just stats.' },
+  { title: 'Your Audience Strength Score', desc: '0–100. We weigh engagement quality, cross-platform overlap, and catalog depth. Not just reach.' },
+  { title: 'Platform-by-platform diagnosis', desc: 'Where you have signal. Where you have noise. What to do about each one — specific to you.' },
+  { title: 'The buyer-vs-streamer split', desc: 'Who&apos;s casually listening. Who&apos;d actually pay. The gap most artists never see in their dashboard.' },
+  { title: 'Your monetization next move', desc: 'Calibrated to your audience size, engagement quality, and current income. Specific. Not generic.' },
+  { title: 'Three actions calibrated to your data', desc: 'Not "post more." Real moves grounded in YOUR comment counts, YOUR release dates, YOUR named superfans.' },
 ];
 
 const faqs = [
@@ -33,28 +33,28 @@ export default function LandingPage() {
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-purple-600/10 blur-[120px]" />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
           <p className="text-sm font-semibold tracking-[0.2em] uppercase text-purple-400 mb-6">
-            Free Superfan Intelligence Report
+            Free Tool · 30-Second Audit
           </p>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
-            Find the fifty fans who&apos;d{' '}
-            <span className="gradient-text">buy anything</span>{' '}
-            you put out.
+            Your fifty biggest fans are{' '}
+            <span className="gradient-text">hiding in your audience</span>{' '}
+            right now.
           </h1>
           <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10">
-            Most artists know their follower count. They have no idea which fans
-            would actually pay them. We scan your platforms for the signals that
-            separate passive listeners from real superfans — repeat engagement,
-            comment patterns, cross-platform overlap, who&apos;s buying versus who&apos;s
-            just streaming.
+            Follower counts lie. Monthly listeners are noise. We scan your
+            platforms for the actual signals — repeat commenters, cross-platform
+            overlap, who buys versus who streams — and show you the specific
+            people in your audience already raising their hand.{' '}
+            <span className="text-white">By name.</span>
           </p>
           <Link
             href="/audit"
             className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-all hover:shadow-lg hover:shadow-purple-500/25 hover:-translate-y-0.5"
           >
-            Run My Free Superfan Audit
+            Show Me My Superfans
             <span aria-hidden="true">&rarr;</span>
           </Link>
-          <p className="text-sm text-gray-500 mt-4">30 seconds. No credit card. Full report on the spot.</p>
+          <p className="text-sm text-gray-500 mt-4">Free. 30 seconds. Your report on the next screen — not in an email later.</p>
         </div>
       </section>
 
@@ -65,11 +65,17 @@ export default function LandingPage() {
             Why this exists
           </p>
           <div className="space-y-5 text-gray-300 text-lg leading-relaxed">
+            <p className="text-white text-xl font-semibold">
+              Most artists have no idea who their superfans are.
+            </p>
             <p>
-              Most artists have no idea who their superfans are. They know their follower
-              count. They know their monthly listeners. They don&apos;t know which{' '}
-              <span className="text-white font-semibold">fifty people</span> in their
-              audience would buy anything they put out.
+              They obsess over their follower count. They check their monthly listeners.
+              They watch their saves tick up.
+            </p>
+            <p>
+              None of those numbers tell you which{' '}
+              <span className="text-white font-semibold">fifty people</span> in your
+              audience would buy anything you put out.
             </p>
             <p>
               Those fifty people exist in your audience right now. You just haven&apos;t
@@ -77,16 +83,16 @@ export default function LandingPage() {
             </p>
             <p>
               That&apos;s what this audit does. You connect your platforms. We scan for
-              superfan signals — not just follower numbers. Things like repeat engagement,
-              comment patterns, who&apos;s showing up across multiple platforms, who&apos;s
-              buying versus just streaming.
+              the signals that actually matter — repeat engagement, comment patterns, who
+              shows up across multiple platforms, who&apos;s buying versus who&apos;s just
+              streaming.
             </p>
             <p>
-              When the results come back you&apos;re looking at the signals from the people
-              who are{' '}
-              <span className="text-white font-semibold">raising their hand</span> —
-              not casually listening, but engaging in a way that tells you there&apos;s
-              real affinity. That&apos;s where you start.
+              Then we show you the people who are{' '}
+              <span className="text-white font-semibold">raising their hand. By name.</span>
+            </p>
+            <p className="text-white">
+              That&apos;s where your music career starts compounding.
             </p>
           </div>
         </div>
@@ -164,15 +170,16 @@ export default function LandingPage() {
             Find Your Fifty.
           </h2>
           <p className="text-gray-400 mb-8">
-            They&apos;re already in your audience. Stop guessing who they are.
+            They&apos;re already in your audience. Stop guessing — start naming names.
           </p>
           <Link
             href="/audit"
             className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-lg text-lg transition-all hover:shadow-lg hover:shadow-purple-500/25 hover:-translate-y-0.5"
           >
-            Run My Free Superfan Audit
+            Show Me My Superfans
             <span aria-hidden="true">&rarr;</span>
           </Link>
+          <p className="text-sm text-gray-500 mt-4">Free. 30 seconds. No card required.</p>
         </div>
       </section>
 

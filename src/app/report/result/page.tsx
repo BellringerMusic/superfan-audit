@@ -350,17 +350,18 @@ function PrimaryCta({ score }: { score: number }) {
     return (
       <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl p-6 sm:p-8 mb-12 text-center">
         <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-200 mb-3">
-          Your audience is ready for the next level
+          Your audience is ready. Are you?
         </p>
         <h2 className="text-white text-2xl sm:text-3xl font-bold mb-3">
-          You scored a {score}. Let&apos;s get you a mastermind.
+          You scored {score}. Most artists never see this number.
         </h2>
         <p className="text-purple-100 text-sm sm:text-base leading-relaxed mb-6 max-w-xl mx-auto">
-          A {score}/100 score means you have real signal — fans engaging across
-          multiple platforms, repeat commenters, the building blocks of a
-          full-time music career. The Global Launchpad Mastermind is for
-          artists at exactly this stage who want to convert that signal into
-          revenue with proven strategies and direct mentorship.
+          A {score}/100 means your audience isn&apos;t just consuming —
+          they&apos;re committing. Repeat commenters. Cross-platform overlap.
+          The exact signal of a career that&apos;s ready to scale. The Global
+          Launchpad Mastermind is for artists who&apos;ve built signal like
+          yours and are ready to convert it into a full-time music career
+          with direct mentorship and proven systems. We don&apos;t take everyone.
         </p>
         <a
           href="https://globallaunchpadmastermind.com"
@@ -368,7 +369,7 @@ function PrimaryCta({ score }: { score: number }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-white text-purple-700 hover:bg-gray-100 font-semibold px-8 py-4 rounded-lg text-base transition-all"
         >
-          Apply to Global Launchpad Mastermind
+          Apply to the Mastermind
           <span aria-hidden="true">→</span>
         </a>
       </div>
@@ -379,16 +380,17 @@ function PrimaryCta({ score }: { score: number }) {
     return (
       <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/30 border border-purple-500/40 rounded-xl p-6 sm:p-8 mb-12 text-center">
         <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-300 mb-3">
-          You have signal worth scaling
+          You&apos;re closer than you think
         </p>
         <h2 className="text-white text-2xl sm:text-3xl font-bold mb-3">
-          You scored a {score}. Time to leverage AI to grow.
+          {score}/100 means you have what most artists don&apos;t — momentum.
         </h2>
         <p className="text-gray-300 text-sm sm:text-base leading-relaxed mb-6 max-w-xl mx-auto">
-          You&apos;ve got the foundation. The fastest way to compound from here
-          is to use AI to multiply your output and reach. That&apos;s exactly
-          what the Wealth &amp; Impact AI Accelerator is built for — artists
-          and creators turning early traction into a real business.
+          Most artists with your numbers stay stuck — repeating the same year
+          over and over. The artists who break out compound. They use AI to
+          multiply output without multiplying hours. Wealth &amp; Impact AI
+          shows you exactly how. Cohort-based, recurring, designed for creators
+          turning early traction into a real business.
         </p>
         <a
           href="https://wealthandimpactai.com"
@@ -396,30 +398,30 @@ function PrimaryCta({ score }: { score: number }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-lg text-base transition-all"
         >
-          See the Wealth &amp; Impact AI Accelerator
+          Get the AI Accelerator
           <span aria-hidden="true">→</span>
         </a>
       </div>
     );
   }
 
-  // Cold tier — under 40. The branding fundamentals are what's actually
-  // missing here, so route to the Branding Bible (offers from free to $997)
-  // rather than a high-ticket mastermind they're not ready for.
+  // Cold tier — under 40. Confrontational diagnosis (CJ peer-voice +
+  // Damasio visceral language): the audience isn't the problem yet — the
+  // brand is. Routes to Branding Bible ($0–$997) with a free-entry framing.
   return (
     <div className="bg-gradient-to-br from-purple-900/40 to-pink-900/20 border border-purple-500/30 rounded-xl p-6 sm:p-8 mb-12 text-center">
       <p className="text-xs font-semibold tracking-[0.2em] uppercase text-purple-300 mb-3">
-        Start with the brand foundation
+        Don&apos;t blame the audience
       </p>
       <h2 className="text-white text-2xl sm:text-3xl font-bold mb-3">
-        You scored a {score}. Build the foundation first.
+        {score}/100. The audience isn&apos;t the problem yet — the brand is.
       </h2>
       <p className="text-gray-300 text-sm sm:text-base leading-relaxed mb-6 max-w-xl mx-auto">
-        A {score}/100 means the brand fundamentals aren&apos;t yet in place to
-        attract superfans at scale. Don&apos;t skip ahead to monetization —
-        the artists who build a real superfan base nail the brand first.
-        The Bellringer Branding Bible is exactly that: the playbook that
-        turns a creator into a brand people commit to.
+        You can&apos;t build superfans on a brand they can&apos;t recognize.
+        The artists who skip ahead to &quot;how do I monetize&quot; before the
+        foundation is in place stay stuck — every year. The Bellringer Branding
+        Bible is the playbook that turns a creator into a brand people commit
+        to. Free intro. $997 if you go all-in.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <a
@@ -428,7 +430,7 @@ function PrimaryCta({ score }: { score: number }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold px-8 py-4 rounded-lg text-base transition-all"
         >
-          Get the Branding Bible
+          Start the Branding Bible (Free)
           <span aria-hidden="true">→</span>
         </a>
         <a
